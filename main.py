@@ -116,7 +116,19 @@ class Pipeline:
             # 4. Corpo HTML → PDF
             html_content = email.corpo_html or f"<pre>{email.corpo_texto}</pre>"
             email_pdf = pasta_trabalho / "00_email.pdf"
-            self.converter.html_string_para_pdf(html_content, email_pdf)
+
+            #ALTERACAO PARA PUXAR O ASSUNTO 
+            self.converter.html_string_para_pdf(
+
+                html=html_content,
+                destino=email_pdf,
+                assunto=email.assunto,
+                remetente=email.remetente,
+                data_email=email.data,
+                nomes_anexos=[a.name for a in email.anexos],
+                message_id=email.message_id,   
+            )  
+
 
             # 5. Anexos → PDF
             anexos_pdf = self._converter_anexos(email.anexos, pasta_trabalho)

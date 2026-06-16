@@ -165,109 +165,27 @@ class PdfConverter:
             corpo_texto = re.sub(r"<[^>]+>", " ", html)
             corpo_texto = re.sub(r"\s+", " ", corpo_texto).strip()
 
-        # ── Formata data de impressão ─────────────────────────────────────────
+        # ── Formata data/hora de impressão ────────────────────────────────────
         agora_str = datetime.now().strftime("%d/%m/%Y, %H:%M")
 
-        # ── Estilos ───────────────────────────────────────────────────────────
-        styles = getSampleStyleSheet()
-
-        st_topo_data = ParagraphStyle(
-            "TopoData",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=_COR_CINZA_MEDIO,
-            alignment=TA_LEFT,
-        )
-        st_topo_titulo = ParagraphStyle(
-            "TopoTitulo",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=_COR_CINZA_MEDIO,
-            alignment=TA_CENTER,
-        )
-        st_topo_pagina = ParagraphStyle(
-            "TopoPagina",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=_COR_CINZA_MEDIO,
-            alignment=TA_RIGHT,
-        )
-        st_assunto = ParagraphStyle(
-            "Assunto",
-            parent=styles["Normal"],
-            fontSize=18,
-            textColor=_COR_CINZA_ESCURO,
-            spaceAfter=6,
-            fontName="Helvetica-Bold",
-        )
-        st_label = ParagraphStyle(
-            "Label",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=_COR_AZUL_TEXTO,
-            fontName="Helvetica-Bold",
-        )
-        st_remetente_nome = ParagraphStyle(
-            "RemetenteNome",
-            parent=styles["Normal"],
-            fontSize=11,
-            textColor=_COR_CINZA_ESCURO,
-            fontName="Helvetica-Bold",
-            spaceAfter=0,
-        )
-        st_remetente_email = ParagraphStyle(
-            "RemetenteEmail",
-            parent=styles["Normal"],
-            fontSize=9,
-            textColor=_COR_CINZA_MEDIO,
-            spaceAfter=0,
-        )
-        st_para_mim = ParagraphStyle(
-            "ParaMim",
-            parent=styles["Normal"],
-            fontSize=9,
-            textColor=_COR_CINZA_MEDIO,
-        )
-        st_corpo = ParagraphStyle(
-            "Corpo",
-            parent=styles["Normal"],
-            fontSize=10,
-            leading=15,
-            textColor=_COR_CINZA_ESCURO,
-            spaceAfter=4,
-        )
-        st_anexo_titulo = ParagraphStyle(
-            "AnexoTitulo",
-            parent=styles["Normal"],
-            fontSize=9,
-            textColor=_COR_CINZA_MEDIO,
-            fontName="Helvetica-Bold",
-            spaceBefore=8,
-            spaceAfter=4,
-        )
-        st_anexo_nome = ParagraphStyle(
-            "AnexoNome",
-            parent=styles["Normal"],
-            fontSize=8,
-            textColor=_COR_CINZA_ESCURO,
-            alignment=TA_CENTER,
-        )
-        st_rodape = ParagraphStyle(
-            "Rodape",
-            parent=styles["Normal"],
-            fontSize=7,
-            textColor=_COR_CINZA_MEDIO,
-            alignment=TA_LEFT,
-        )
-
-        # ── Parseia remetente ─────────────────────────────────────────────────
+        # ── Parseia remetente: "Nome Sobrenome <email@dominio>" ───────────────
         match_nome = re.match(r'^"?([^"<]+)"?\s*<([^>]+)>', remetente)
         if match_nome:
             nome_rem = match_nome.group(1).strip()
             email_rem = match_nome.group(2).strip()
         else:
-            nome_rem = remetente
+            nome_rem = remetente.strip()
             email_rem = ""
+
+        # ── Escolhe cor do avatar baseada na inicial (igual ao Gmail) ─────────
+        _AVATAR_CORES = [
+            "#1a73e8", "#d93025", "#1e8e3e", "#f29900",
+            "#9334e6", "#007b83", "#c5221f", "#185abc",
+        ]
+        inicial = (nome_rem[0] if nome_rem else "?").upper()
+        cor_avatar = colors.HexColor(
+            _AVATAR_CORES[ord(inicial) % len(_AVATAR_CORES)]
+        )
 
         # ── Monta o documento ─────────────────────────────────────────────────
         doc = SimpleDocTemplate(
@@ -278,109 +196,139 @@ class PdfConverter:
             topMargin=14 * mm,
             bottomMargin=14 * mm,
         )
-
         largura_util = A4[0] - 36 * mm
+        styles = getSampleStyleSheet()
+
+        # ── Estilos ───────────────────────────────────────────────────────────
+        def _st(name, **kw):
+            return ParagraphStyle(name, parent=styles["Normal"], **kw)
+
+        st_topo      = _st("Topo",     fontSize=8,  textColor=_COR_CINZA_MEDIO)
+        st_topo_c    = _st("TopoC",    fontSize=8,  textColor=_COR_CINZA_MEDIO, alignment=TA_CENTER)
+        st_topo_r    = _st("TopoR",    fontSize=8,  textColor=_COR_CINZA_MEDIO, alignment=TA_RIGHT)
+        st_assunto   = _st("Assunto",  fontSize=20, textColor=_COR_CINZA_ESCURO,
+                           fontName="Helvetica-Bold", spaceAfter=6)
+        st_label_txt = _st("LabelTxt", fontSize=8,  textColor=_COR_AZUL_TEXTO,
+                           fontName="Helvetica-Bold")
+        st_rem_nome  = _st("RemNome",  fontSize=11, textColor=_COR_CINZA_ESCURO,
+                           fontName="Helvetica-Bold", spaceAfter=1)
+        st_rem_sub   = _st("RemSub",   fontSize=9,  textColor=_COR_CINZA_MEDIO, spaceAfter=0)
+        st_avatar    = _st("Avatar",   fontSize=15, textColor=colors.white,
+                           fontName="Helvetica-Bold", alignment=TA_CENTER)
+        st_corpo     = _st("Corpo",    fontSize=10, leading=15,
+                           textColor=_COR_CINZA_ESCURO, spaceAfter=4)
+        st_anx_hdr   = _st("AnxHdr",  fontSize=9,  textColor=_COR_CINZA_MEDIO,
+                           fontName="Helvetica-Bold", spaceBefore=6, spaceAfter=6)
+        st_anx_nome  = _st("AnxNome", fontSize=8,  textColor=_COR_CINZA_ESCURO,
+                           alignment=TA_CENTER)
+        st_anx_tipo  = _st("AnxTipo", fontSize=7,  textColor=colors.HexColor("#70757a"),
+                           alignment=TA_CENTER)
+        st_rodape    = _st("Rodape",  fontSize=7,  textColor=_COR_CINZA_MEDIO)
+
         story: list = []
 
-        # ── 1. Barra de topo (data | título | página 1/1) ─────────────────────
-        topo_data = Paragraph(agora_str, st_topo_data)
-        topo_titulo = Paragraph("Gmail - Caixa de entrada", st_topo_titulo)
-        topo_pag = Paragraph("1/1", st_topo_pagina)
-        topo_table = Table(
-            [[topo_data, topo_titulo, topo_pag]],
-            colWidths=[largura_util * 0.3, largura_util * 0.4, largura_util * 0.3],
+        # ══════════════════════════════════════════════════════════════════════
+        # 1. BARRA TOPO  →  "16/06/2026, 11:04   TESTE05 - email - Gmail   1/1"
+        # ══════════════════════════════════════════════════════════════════════
+        assunto_safe = (assunto or "(sem assunto)").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        email_rem_safe = email_rem.replace("&", "&amp;").replace("<", "&lt;")
+        topo_centro = f"{assunto_safe} - {email_rem_safe} - Gmail" if email_rem_safe else f"{assunto_safe} - Gmail"
+
+        topo = Table(
+            [[Paragraph(agora_str, st_topo),
+              Paragraph(topo_centro, st_topo_c),
+              Paragraph("1/1", st_topo_r)]],
+            colWidths=[largura_util * 0.25, largura_util * 0.50, largura_util * 0.25],
         )
-        topo_table.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        topo.setStyle(TableStyle([
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ]))
-        story.append(topo_table)
-        story.append(HRFlowable(width="100%", thickness=0.5, color=_COR_BORDA, spaceAfter=8))
-
-        # ── 2. Assunto + labels ───────────────────────────────────────────────
-        assunto_safe = (assunto or "(sem assunto)").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        story.append(Paragraph(assunto_safe, st_assunto))
-
-        # Labels estilo Gmail (ex: "Caixa de entrada ×  PROCESSADO ×")
-        if labels:
-            labels_cells = []
-            for lb in labels:
-                lb_safe = lb.replace("&", "&amp;")
-                cell = Paragraph(f'<font color="#1967d2">{lb_safe} ×</font>', st_label)
-                labels_cells.append(cell)
-            # Renderiza labels inline como tabela horizontal
-            label_table = Table(
-                [labels_cells],
-                colWidths=[40 * mm] * len(labels_cells),
-            )
-            label_table.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, -1), _COR_AZUL_LABEL),
-                ("ROUNDEDCORNERS", [4]),
-                ("TOPPADDING", (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ]))
-            story.append(label_table)
-            story.append(Spacer(1, 6))
-
+        story.append(topo)
         story.append(HRFlowable(width="100%", thickness=0.5, color=_COR_BORDA, spaceAfter=10))
 
-        # ── 3. Cabeçalho do remetente ─────────────────────────────────────────
-        # Avatar circular simulado (quadrado com inicial)
-        inicial = (nome_rem[0] if nome_rem else "?").upper()
-        avatar_style = ParagraphStyle(
-            "Avatar",
-            parent=styles["Normal"],
-            fontSize=14,
-            textColor=colors.white,
-            fontName="Helvetica-Bold",
-            alignment=TA_CENTER,
+        # ══════════════════════════════════════════════════════════════════════
+        # 2. ASSUNTO  +  LABELS  (Caixa de entrada ×   PROCESSADO ×)
+        # ══════════════════════════════════════════════════════════════════════
+        story.append(Paragraph(assunto_safe, st_assunto))
+
+        # Labels ao lado do assunto, estilo pill cinza
+        labels_para_exibir = labels if labels else ["Caixa de entrada"]
+        label_cells = []
+        for lb in labels_para_exibir:
+            lb_safe = lb.replace("&", "&amp;")
+            p = Paragraph(f"{lb_safe} ×", st_label_txt)
+            label_cells.append(p)
+
+        col_w = min(50 * mm, largura_util / max(len(label_cells), 1))
+        label_table = Table(
+            [label_cells],
+            colWidths=[col_w] * len(label_cells),
         )
-        avatar_cell = Paragraph(f'<font color="white"><b>{inicial}</b></font>', avatar_style)
+        label_table.setStyle(TableStyle([
+            ("BACKGROUND",     (0, 0), (-1, -1), _COR_AZUL_LABEL),
+            ("TOPPADDING",     (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING",  (0, 0), (-1, -1), 3),
+            ("LEFTPADDING",    (0, 0), (-1, -1), 7),
+            ("RIGHTPADDING",   (0, 0), (-1, -1), 7),
+            ("VALIGN",         (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        story.append(label_table)
+        story.append(Spacer(1, 8))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=_COR_BORDA, spaceAfter=10))
 
-        # Bloco nome + email
-        nome_safe = nome_rem.replace("&", "&amp;").replace("<", "&lt;")
-        email_safe = email_rem.replace("&", "&amp;").replace("<", "&lt;")
-        data_safe = data_email.replace("&", "&amp;")
+        # ══════════════════════════════════════════════════════════════════════
+        # 3. BLOCO REMETENTE  →  [Avatar]  Nome Sobrenome
+        #                                  <email@dominio>
+        #                                  data
+        #                                  para mim
+        # ══════════════════════════════════════════════════════════════════════
+        nome_safe  = nome_rem.replace("&", "&amp;").replace("<", "&lt;")
+        data_safe  = data_email.replace("&", "&amp;")
 
-        rem_nome_p = Paragraph(nome_safe, st_remetente_nome)
-        rem_email_p = Paragraph(f"&lt;{email_safe}&gt;" if email_safe else "", st_remetente_email)
-        rem_data_p = Paragraph(data_safe, st_remetente_email)
-        rem_para_p = Paragraph("para mim", st_para_mim)
+        avatar_p = Paragraph(f"<b>{inicial}</b>", st_avatar)
+        avatar_tbl = Table([[avatar_p]], colWidths=[12 * mm], rowHeights=[12 * mm])
+        avatar_tbl.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, -1), cor_avatar),
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+            ("TOPPADDING",    (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ]))
 
-        rem_info = Table(
-            [[rem_nome_p], [rem_email_p], [rem_data_p], [rem_para_p]],
-            colWidths=[largura_util - 22 * mm],
-        )
-        rem_info.setStyle(TableStyle([
-            ("TOPPADDING", (0, 0), (-1, -1), 1),
+        info_rows = [[Paragraph(nome_safe, st_rem_nome)]]
+        if email_rem_safe:
+            info_rows.append([Paragraph(f"&lt;{email_rem_safe}&gt;", st_rem_sub)])
+        if data_safe:
+            info_rows.append([Paragraph(data_safe, st_rem_sub)])
+        info_rows.append([Paragraph("para mim", st_rem_sub)])
+
+        info_tbl = Table(info_rows, colWidths=[largura_util - 18 * mm])
+        info_tbl.setStyle(TableStyle([
+            ("TOPPADDING",    (0, 0), (-1, -1), 1),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
         ]))
 
-        header_table = Table(
-            [[avatar_cell, rem_info]],
-            colWidths=[14 * mm, largura_util - 14 * mm],
-        )
-        header_table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), _COR_VERMELHO_GM),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (0, 0), 6),
-            ("BOTTOMPADDING", (0, 0), (0, 0), 6),
-            ("LEFTPADDING", (0, 0), (0, 0), 4),
-            ("RIGHTPADDING", (0, 0), (0, 0), 4),
-            ("LEFTPADDING", (1, 0), (1, 0), 10),
-            ("TOPPADDING", (1, 0), (1, 0), 2),
+        rem_tbl = Table([[avatar_tbl, info_tbl]], colWidths=[14 * mm, largura_util - 14 * mm])
+        rem_tbl.setStyle(TableStyle([
+            ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING",   (1, 0), (1, 0),   8),
+            ("TOPPADDING",    (0, 0), (0, 0),   0),
+            ("BOTTOMPADDING", (0, 0), (0, 0),   0),
         ]))
-        story.append(header_table)
-        story.append(Spacer(1, 12))
+        story.append(rem_tbl)
+        story.append(Spacer(1, 14))
 
-        # ── 4. Corpo do email ─────────────────────────────────────────────────
-        for linha in corpo_texto[:60_000].split("\n"):
+        # ══════════════════════════════════════════════════════════════════════
+        # 4. CORPO DO EMAIL
+        # ══════════════════════════════════════════════════════════════════════
+        linhas = corpo_texto[:80_000].split("\n")
+        espacos_consecutivos = 0
+        for linha in linhas:
             linha_strip = linha.strip()
             if linha_strip:
+                espacos_consecutivos = 0
                 linha_safe = (
                     linha_strip
                     .replace("&", "&amp;")
@@ -389,77 +337,118 @@ class PdfConverter:
                 )
                 story.append(Paragraph(linha_safe, st_corpo))
             else:
-                story.append(Spacer(1, 5 * mm))
+                espacos_consecutivos += 1
+                if espacos_consecutivos <= 2:  # máx. 2 linhas em branco seguidas
+                    story.append(Spacer(1, 4 * mm))
 
-        # ── 5. Seção de anexos ────────────────────────────────────────────────
+        # ══════════════════════════════════════════════════════════════════════
+        # 5. SEÇÃO DE ANEXOS  →  "3 anexos • Verificados pelo Gmail"
+        #    Grade: miniatura (preview colorido) + nome do arquivo + tipo
+        # ══════════════════════════════════════════════════════════════════════
         if nomes_anexos:
             story.append(Spacer(1, 6))
             story.append(HRFlowable(width="100%", thickness=0.5, color=_COR_BORDA, spaceAfter=6))
             qtd = len(nomes_anexos)
             story.append(Paragraph(
-                f"{qtd} anexo{'s' if qtd > 1 else ''} • Verificados pelo Gmail",
-                st_anexo_titulo
+                f"{qtd} anexo{'s' if qtd > 1 else ''} &nbsp;•&nbsp; Verificados pelo Gmail",
+                st_anx_hdr,
             ))
 
-            # Grade de miniaturas (caixas cinzas com nome do arquivo)
+            # Cores por extensão (fiel ao visual do Gmail)
+            _EXT_CORES: dict[str, str] = {
+                ".pdf":  "#EA4335",  # vermelho
+                ".xml":  "#34A853",  # verde
+                ".xls":  "#0F9D58",  # verde escuro
+                ".xlsx": "#0F9D58",
+                ".doc":  "#4285F4",  # azul
+                ".docx": "#4285F4",
+                ".jpg":  "#FBBC04",  # amarelo
+                ".jpeg": "#FBBC04",
+                ".png":  "#FBBC04",
+            }
+
             COLUNAS = 3
-            linhas_anexos = []
-            linha_atual = []
-            for nome in nomes_anexos:
-                nome_safe = nome.replace("&", "&amp;").replace("<", "&lt;")
-                ext_color = _COR_VERMELHO_GM  # ícone vermelho padrão
+            CARD_W  = 52 * mm
+            CARD_H  = 36 * mm
 
-                miniatura = Table(
-                    [[Paragraph(f'<font color="white"><b>{Path(nome).suffix.upper().lstrip(".")[:4]}</b></font>',
-                                ParagraphStyle("Ext", parent=styles["Normal"], fontSize=9,
-                                               textColor=colors.white, fontName="Helvetica-Bold",
-                                               alignment=TA_CENTER))]],
-                    colWidths=[28 * mm],
-                    rowHeights=[18 * mm],
+            linhas_grade: list[list] = []
+            linha_atual: list = []
+
+            for nome_arq in nomes_anexos:
+                ext = Path(nome_arq).suffix.lower()
+                ext_label = ext.upper().lstrip(".")[:4] or "ARQ"
+                cor_hex = _EXT_CORES.get(ext, "#5F6368")
+                cor_card = colors.HexColor(cor_hex)
+
+                nome_s = nome_arq.replace("&", "&amp;").replace("<", "&lt;")
+                nome_curto = nome_s[:28] + ("…" if len(nome_s) > 28 else "")
+
+                # Preview: retângulo colorido com extensão centralizada
+                st_ext_label = ParagraphStyle(
+                    f"ExtLbl_{ext_label}",
+                    parent=styles["Normal"],
+                    fontSize=11,
+                    textColor=colors.white,
+                    fontName="Helvetica-Bold",
+                    alignment=TA_CENTER,
                 )
-                miniatura.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), ext_color),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("BOX", (0, 0), (-1, -1), 0.5, _COR_BORDA),
+                preview = Table(
+                    [[Paragraph(f"<b>{ext_label}</b>", st_ext_label)]],
+                    colWidths=[CARD_W - 4 * mm],
+                    rowHeights=[CARD_H - 4 * mm],
+                )
+                preview.setStyle(TableStyle([
+                    ("BACKGROUND",    (0, 0), (-1, -1), cor_card),
+                    ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+                    ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+                    ("BOX",           (0, 0), (-1, -1), 0.5, _COR_BORDA),
                 ]))
 
-                celula = Table(
-                    [[miniatura], [Paragraph(nome_safe[:30], st_anexo_nome)]],
-                    colWidths=[30 * mm],
+                card = Table(
+                    [[preview],
+                     [Paragraph(nome_curto, st_anx_nome)],
+                     [Paragraph(ext_label, st_anx_tipo)]],
+                    colWidths=[CARD_W],
                 )
-                celula.setStyle(TableStyle([
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("TOPPADDING", (0, 0), (-1, -1), 2),
+                card.setStyle(TableStyle([
+                    ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+                    ("TOPPADDING",    (0, 0), (-1, -1), 2),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                    ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
                 ]))
 
-                linha_atual.append(celula)
+                linha_atual.append(card)
                 if len(linha_atual) == COLUNAS:
-                    linhas_anexos.append(linha_atual)
+                    linhas_grade.append(linha_atual)
                     linha_atual = []
 
+            # Completa última linha com células vazias
             if linha_atual:
-                # Preenche células vazias para completar a linha
                 while len(linha_atual) < COLUNAS:
                     linha_atual.append(Paragraph("", styles["Normal"]))
-                linhas_anexos.append(linha_atual)
+                linhas_grade.append(linha_atual)
 
-            grade = Table(
-                linhas_anexos,
-                colWidths=[32 * mm] * COLUNAS,
-            )
+            grade = Table(linhas_grade, colWidths=[CARD_W] * COLUNAS)
             grade.setStyle(TableStyle([
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+                ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+                ("TOPPADDING",    (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("LEFTPADDING",   (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
             ]))
             story.append(grade)
 
-        # ── 6. Rodapé com URL ─────────────────────────────────────────────────
+        # ══════════════════════════════════════════════════════════════════════
+        # 6. RODAPÉ  →  URL do Gmail
+        # ══════════════════════════════════════════════════════════════════════
         story.append(Spacer(1, 10))
         story.append(HRFlowable(width="100%", thickness=0.5, color=_COR_BORDA, spaceAfter=4))
-        url = f"https://mail.google.com/mail/u/0/#inbox/{message_id}" if message_id else "https://mail.google.com"
+        url = (
+            f"https://mail.google.com/mail/u/0/#inbox/{message_id}"
+            if message_id else "https://mail.google.com"
+        )
         story.append(Paragraph(url, st_rodape))
 
         doc.build(story)
