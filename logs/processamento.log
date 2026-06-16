@@ -3278,3 +3278,46 @@
 2026-06-16 09:42:26,748 [INFO    ] gmail_service — 1 email(s) encontrado(s) na label 'PROCESSAR'.
 2026-06-16 09:42:26,749 [INFO    ] __main__ — 1 email(s) a processar.
 2026-06-16 09:42:26,754 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-16 10:57:47,044 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-16 10:57:47,047 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-16 10:57:47,047 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-16 10:57:47,077 [INFO    ] gmail_service — Renovando token de acesso do Gmail...
+2026-06-16 10:57:48,165 [INFO    ] gmail_service — Token salvo em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\token.json
+2026-06-16 10:57:48,499 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-16 10:57:48,530 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-16 10:57:48,553 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-16 10:57:48,591 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-16 10:57:48,616 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-16 10:57:50,060 [INFO    ] gmail_service — 1 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-16 10:57:50,060 [INFO    ] __main__ — 1 email(s) a processar.
+2026-06-16 10:57:50,064 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-16 11:17:40,552 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-16 11:17:40,554 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-16 11:17:40,555 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-16 11:17:40,571 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-16 11:17:40,581 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-16 11:17:40,586 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-16 11:17:40,592 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-16 11:17:40,613 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-16 11:17:43,024 [INFO    ] gmail_service — 2 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-16 11:17:43,025 [INFO    ] __main__ — 2 email(s) a processar.
+2026-06-16 11:17:43,251 [INFO    ] __main__ — ════════════════════════════════════════════════════════════
+2026-06-16 11:17:43,251 [INFO    ] __main__ — Iniciando processamento do email: 19ed0cb09c38a841
+2026-06-16 11:17:44,852 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed0cb09c38a841\bol-NUTRIVIDA.pdf (214545 bytes)
+2026-06-16 11:17:44,855 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed0cb09c38a841\COMPROVANTE.jpeg (45940 bytes)
+2026-06-16 11:17:45,012 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed0cb09c38a841\DANFe de Devolucao (729) conferencia.pdf (355151 bytes)
+2026-06-16 11:17:46,028 [INFO    ] pdf_converter — Convertendo HTML do email → 00_email.pdf (estilo Gmail)
+2026-06-16 11:17:46,525 [INFO    ] pdf_converter — PDF estilo Gmail gerado: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\output\19ed0cb09c38a841\00_email.pdf
+2026-06-16 11:17:46,530 [INFO    ] pdf_converter — Convertendo bol-NUTRIVIDA.pdf → bol-NUTRIVIDA.pdf
+2026-06-16 11:17:48,916 [INFO    ] __main__ — Anexo 1/3 convertido: bol-NUTRIVIDA.pdf
+2026-06-16 11:17:48,918 [INFO    ] pdf_converter — Convertendo COMPROVANTE.jpeg → COMPROVANTE.pdf
+2026-06-16 11:17:51,292 [INFO    ] __main__ — Anexo 2/3 convertido: COMPROVANTE.pdf
+2026-06-16 11:17:51,294 [INFO    ] pdf_converter — Convertendo DANFe de Devolucao (729) conferencia.pdf → DANFe de Devolucao (729) conferencia.pdf
+2026-06-16 11:17:51,316 [INFO    ] __main__ — Anexo 3/3 convertido: DANFe de Devolucao (729) conferencia.pdf
+2026-06-16 11:17:51,319 [INFO    ] pdf_merger — Ordem de mesclagem: Outros → Outros → Outros → Email
+2026-06-16 11:17:51,460 [INFO    ] pdf_merger — PDF consolidado gerado: 2026-06-16_TESTE07.pdf (4 páginas, 3 anexo(s))
+2026-06-16 11:17:51,461 [INFO    ] __main__ — Classificação: Boleto
+2026-06-16 11:17:55,561 [INFO    ] drive_service — Upload concluído: 2026-06-16_TESTE07.pdf → https://drive.google.com/file/d/1_apkqDS0lMtw35D8aefgRQFansXOgeYX/view?usp=drivesdk
+2026-06-16 11:17:56,735 [INFO    ] gmail_service — Email 19ed0cb09c38a841 movido para PROCESSADO.
+2026-06-16 11:17:56,736 [INFO    ] __main__ — ✓ Email 19ed0cb09c38a841 processado com sucesso → 2026-06-16_TESTE07.pdf
+2026-06-16 11:17:56,744 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
