@@ -1,0 +1,28 @@
+# ── Credenciais e tokens OAuth2 (NUNCA commitar) ─────────────────────────────
+credentials.json
+token.json
+client_secret_*.json
+
+# ── Configuração local ────────────────────────────────────────────────────────
+.env
+
+# ── Dados gerados em runtime ──────────────────────────────────────────────────
+downloads/
+output/
+logs/
+*.db
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# ── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp

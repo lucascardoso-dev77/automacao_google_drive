@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  automacao-documental:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: automacao-documental
+
+    # Variáveis de ambiente carregadas do .env local
+    env_file:
+      - .env
+
+    volumes:
+      # Credenciais e token OAuth2 (nunca commitar esses arquivos)
+      - ./credentials.json:/app/credentials.json:ro
+      - ./token.json:/app/token.json
+
+      # Dados persistentes
+      - ./downloads:/app/downloads
+      - ./output:/app/output
+      - ./logs:/app/logs
+      - ./processamentos.db:/app/processamentos.db
+
+    # Reinicia automaticamente em caso de falha (útil com cron externo)
+    restart: "no"
+
+    # Healthcheck simples: verifica se o Python está acessível
+    healthcheck:
+      test: ["CMD", "python", "--version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
