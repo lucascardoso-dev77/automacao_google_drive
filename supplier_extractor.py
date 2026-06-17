@@ -37,34 +37,61 @@ _NFE_NAMESPACES = [
     "",  # sem namespace (fallback)
 ]
 
-# Padrões para identificar Razão Social em PDFs de DANFE / Nota Fiscal
+# Padrão de CNPJ e CPF para detectar e descartar candidatos que sejam
+# apenas números de documento (ex.: "12.345.678/0001-90" ou "123.456.789-00")
+_RE_CNPJ_CPF = re.compile(
+    r"^\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}$"   # CNPJ
+    r"|^\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}$",              # CPF
+)
+
+# Padrão de data para descartar candidatos que sejam apenas datas
+_RE_DATA = re.compile(
+    r"^\d{2}[/\-.]\d{2}[/\-.]\d{2,4}$"
+)
+
+# Padrões para identificar Razão Social em PDFs de DANFE / Nota Fiscal.
+#
+# IMPORTANTE — layout do DANFE:
+#   O PDF contém DOIS blocos "NOME / RAZÃO SOCIAL":
+#     1º → emitente  (quem emitiu a NF — é o que queremos)
+#     2º → destinatário ou transportador
+#   Por isso os padrões abaixo usam re.search() que retorna a PRIMEIRA ocorrência,
+#   e a função extrair_fornecedor_nfe_pdf() para no primeiro match válido.
+#
+# Todos usam {3,60} + lookahead para não vazar CNPJ/data/campos adjacentes.
 _PADROES_NF = [
-    # "RAZÃO SOCIAL   EMPRESA EXEMPLO LTDA"
-    r"RAZ[AÃ]O\s+SOCIAL[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    # "NOME / RAZÃO SOCIAL   EMPRESA"
-    r"NOME\s*/?\s*RAZ[AÃ]O\s+SOCIAL[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    # "EMITENTE   EMPRESA EXEMPLO LTDA"
-    r"EMITENTE[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    # "FORNECEDOR   EMPRESA EXEMPLO LTDA"
-    r"FORNECEDOR[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    # Nome logo após CNPJ do emitente (padrão DANFE)
-    r"CNPJ\s*[:\s]?\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}\s+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{5,})",
+    # Padrão DANFE prioritário: cabeçalho "DANFE" seguido do nome do emitente
+    # Layout real: "NOME EMPRESA\nDANFE" ou "NOME EMPRESA - DANFE"
+    r"^([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/:-]{5,60}?)\s*[-–]?\s*DANFE",
+    # Padrão DANFE: nome do emitente aparece na linha imediatamente ANTES de "DANFE"
+    r"([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/:-]{5,60}?)\n(?:[A-ZÀ-Ú0-9 .,'&/:-]{0,60}\n)?DANFE",
+    # "NOME / RAZÃO SOCIAL  EMPRESA LTDA"  → captura SOMENTE até a próxima coluna
+    r"NOME\s*/\s*RAZ[AÃ]O\s+SOCIAL\s+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|\n|$)",
+    # "RAZÃO SOCIAL   EMPRESA LTDA"
+    r"RAZ[AÃ]O\s+SOCIAL[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|\n|$)",
+    # "EMITENTE   EMPRESA LTDA"
+    r"EMITENTE[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|\n|$)",
+    # "FORNECEDOR   EMPRESA LTDA"
+    r"FORNECEDOR[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|\n|$)",
+    # Nome entre rótulo "NOME:" e CNPJ/IE na linha (padrão NFS-e municipal)
+    r"NOME[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|\n|$)",
 ]
 
-# Padrões para identificar Cedente / Beneficiário em boletos
+# Padrões para identificar Cedente / Beneficiário em boletos.
 _PADROES_BOLETO = [
-    r"CEDENTE[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    r"BENEFICI[AÁ]RIO[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    r"BENEFICI[AÁ]RIO\s+FINAL[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    r"RECEBEDOR[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
-    r"FAVORECIDO[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,})",
+    r"CEDENTE[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|$)",
+    r"BENEFICI[AÁ]RIO[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|$)",
+    r"BENEFICI[AÁ]RIO\s+FINAL[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|$)",
+    r"RECEBEDOR[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|$)",
+    r"FAVORECIDO[\s:]+([A-ZÀ-Ú][A-ZÀ-Ú0-9 .,'&/-]{3,60}?)(?=\s{2,}|\t|\d{2}[./]\d{3}|CNPJ|CPF|$)",
 ]
 
 # Palavras que indicam que o texto extraído é lixo (cabeçalho de coluna etc.)
 _PALAVRAS_DESCARTE = {
     "DATA", "VALOR", "VENCIMENTO", "BANCO", "AGENCIA", "CONTA",
     "NUMERO", "PAGADOR", "SACADO", "DOCUMENTO", "LOCAL", "PAGAMENTO",
-    "NOTA", "FISCAL", "SERIE", "FOLHA", "PAGINA",
+    "NOTA", "FISCAL", "SERIE", "FOLHA", "PAGINA", "CNPJ", "CPF",
+    "INSCRICAO", "INSCR", "IE", "IM", "EMISSAO", "COMPETENCIA",
 }
 
 
@@ -126,25 +153,62 @@ def _extrair_texto_pdf(caminho_pdf: Path) -> str:
     return ""
 
 
+def _limpar_candidato(candidato: str) -> str:
+    """
+    Remove sufixos indesejados de um candidato a nome de fornecedor:
+    CNPJ, CPF, datas e qualquer sequência numérica no final da string.
+    """
+    # Remove CNPJ inline (ex.: "EMPRESA LTDA 12.345.678/0001-90")
+    candidato = re.sub(
+        r"\s*\d{2}[.\s]?\d{3}[.\s]?\d{3}[/\s]?\d{4}[-\s]?\d{2}\s*$", "", candidato
+    )
+    # Remove CPF inline (ex.: "JOAO DA SILVA 123.456.789-00")
+    candidato = re.sub(r"\s*\d{3}[.\s]?\d{3}[.\s]?\d{3}[-\s]?\d{2}\s*$", "", candidato)
+    # Remove datas no final (ex.: "EMPRESA LTDA 01/01/2024")
+    candidato = re.sub(r"\s*\d{2}[/\-.]\d{2}[/\-.]\d{2,4}\s*$", "", candidato)
+    # Remove qualquer token final que seja só números (ex.: IE, IM, código)
+    candidato = re.sub(r"\s+\d+\s*$", "", candidato)
+    return candidato.strip()
+
+
 def _buscar_padroes(texto: str, padroes: list[str]) -> str | None:
     """
     Testa uma lista de padrões regex no texto (uppercase) e retorna o primeiro
-    grupo capturado que não seja uma palavra de descarte.
+    grupo capturado que não seja uma palavra de descarte, CNPJ, CPF ou data.
     """
     texto_upper = texto.upper()
     for padrao in padroes:
         for match in re.finditer(padrao, texto_upper, re.MULTILINE):
             candidato = match.group(1).strip()
-            # Remove possíveis valores de colunas adjacentes (pega até nova linha)
+            # Pega somente até a primeira quebra de linha
             candidato = candidato.split("\n")[0].strip()
-            # Limita ao que parece um nome de empresa razoável
+            # Colapsa espaços múltiplos
             candidato = re.sub(r"\s{2,}", " ", candidato).strip()
+
+            # Remove CNPJ/CPF/datas que tenham vazado para dentro do grupo capturado
+            candidato = _limpar_candidato(candidato)
+
             if len(candidato) < 4:
                 continue
+
+            # Descarta se for inteiramente um CNPJ, CPF ou data
+            if _RE_CNPJ_CPF.match(candidato) or _RE_DATA.match(candidato):
+                logger.debug("Candidato descartado (doc/data): %r", candidato)
+                continue
+
+            # Descarta se a primeira palavra for ruído conhecido
             primeira_palavra = candidato.split()[0].upper()
             if primeira_palavra in _PALAVRAS_DESCARTE:
+                logger.debug("Candidato descartado (palavra-ruído): %r", candidato)
                 continue
-            logger.debug("Padrão '%s' → candidato: %r", padrao[:40], candidato)
+
+            # Descarta se mais de 60% dos caracteres forem dígitos (provável número)
+            digitos = sum(c.isdigit() for c in candidato)
+            if digitos / max(len(candidato), 1) > 0.6:
+                logger.debug("Candidato descartado (muitos dígitos): %r", candidato)
+                continue
+
+            logger.debug("Padrão '%s' → candidato aceito: %r", padrao[:40], candidato)
             return candidato
     return None
 
@@ -213,22 +277,123 @@ def extrair_fornecedor_xml(xml_path: Path) -> str | None:
     return None
 
 
+def _extrair_nome_danfe(texto: str) -> str | None:
+    """
+    Estratégia específica para DANFE: localiza a linha que contém a palavra
+    'DANFE', extrai o nome antes dela e tenta juntar com a linha seguinte
+    caso o nome esteja quebrado em duas linhas (ex.: nome longo com razão
+    social e nome fantasia separados).
+
+    Layout real:
+        "DEYVID MAYCON DA SILVA - DANFE"
+        "Documento Auxiliar da"       ← rótulo, ignorar
+        "REBOQUE E SEGURADORA"        ← continuação do nome
+
+    Retorna o nome completo ou None se o padrão não for encontrado.
+    """
+    # Rótulos que NÃO são continuação do nome do emitente
+    _ROTULOS_IGNORAR = {
+        "DOCUMENTO AUXILIAR", "NOTA FISCAL ELETRONICA", "NOTA FISCAL ELECTRONICA",
+        "FOLHA", "SERIE", "0 -", "1 -", "SAIDA", "ENTRADA",
+        "CHAVE DE ACESSO", "CONSULTA", "PROTOCOLO",
+    }
+
+    linhas = texto.upper().split("\n")
+    for i, linha in enumerate(linhas):
+        if "DANFE" not in linha:
+            continue
+
+        # Remove "DANFE" e tudo depois (inclui " - DANFE", "DANFE\n" etc.)
+        nome_base = re.sub(r"\s*[-–]?\s*DANFE.*", "", linha).strip()
+
+        if len(nome_base) < 4:
+            continue
+
+        # Tenta encontrar continuação nas próximas 3 linhas
+        for j in range(i + 1, min(i + 4, len(linhas))):
+            prox = linhas[j].strip()
+            if not prox:
+                continue
+            # Ignora linhas de rótulo
+            if any(rot in prox for rot in _ROTULOS_IGNORAR):
+                continue
+            # Aceita somente se começar com letra maiúscula (nome de empresa)
+            if re.match(r"^[A-ZÀ-Ú]", prox):
+                nome_completo = f"{nome_base} {prox}".strip()
+                logger.debug("Nome DANFE (2 linhas): %r", nome_completo)
+                return nome_completo
+            # Se a linha não é um rótulo nem começa com maiúscula, para
+            break
+
+        logger.debug("Nome DANFE (1 linha): %r", nome_base)
+        return nome_base
+
+    return None
+
+
+def _extrair_bloco_emitente(texto: str) -> str:
+    """
+    No DANFE o texto extraído contém múltiplos blocos "NOME / RAZÃO SOCIAL"
+    (emitente, destinatário, transportador). Esta função recorta SOMENTE o
+    trecho do emitente, que aparece ANTES do bloco "DESTINATÁRIO / REMETENTE"
+    ou "CÁLCULO DO IMPOSTO" ou "TRANSPORTADOR".
+
+    Retorna o trecho recortado, ou o texto original se nenhum marcador for
+    encontrado (documentos que não são DANFE).
+    """
+    texto_upper = texto.upper()
+    _MARCADORES_FIM = [
+        "DESTINATARIO / REMETENTE",
+        "DESTINATÁRIO / REMETENTE",
+        "CALCULO DO IMPOSTO",
+        "CÁLCULO DO IMPOSTO",
+        "TRANSPORTADOR",
+        "DADOS DOS PRODUTOS",
+    ]
+    for marcador in _MARCADORES_FIM:
+        pos = texto_upper.find(marcador)
+        if pos > 100:
+            bloco = texto[:pos]
+            logger.debug(
+                "Bloco emitente recortado até '%s' (pos=%d, %d chars)",
+                marcador, pos, len(bloco),
+            )
+            return bloco
+    return texto
+
+
 def extrair_fornecedor_nfe_pdf(pdf_path: Path) -> str | None:
     """
-    Extrai o nome do emitente de um PDF de Nota Fiscal / DANFE buscando
-    padrões de Razão Social, Emitente e Fornecedor no texto.
+    Extrai o nome do emitente de um PDF de Nota Fiscal / DANFE.
+
+    Estratégia em três passos:
+      1. Tenta extração direta pelo padrão "NOME - DANFE" (mais preciso).
+      2. Recorta o bloco do emitente (antes de DESTINATÁRIO / TRANSPORTADOR)
+         para evitar que padrões peguem blocos posteriores de NOME/RAZÃO SOCIAL.
+      3. Aplica os padrões regex gerais sobre o bloco recortado.
 
     Args:
         pdf_path: Caminho do PDF da nota fiscal.
 
     Returns:
-        Nome do emitente em maiúsculas, ou None se não encontrado.
+        Nome do emitente, ou None se não encontrado.
     """
     texto = _extrair_texto_pdf(pdf_path)
     if not texto:
         return None
 
-    resultado = _buscar_padroes(texto, _PADROES_NF)
+    # 1. Tentativa prioritária: padrão DANFE direto (mais confiável)
+    resultado = _extrair_nome_danfe(texto)
+    if resultado:
+        logger.info(
+            "Fornecedor extraído via padrão DANFE em '%s': %r",
+            pdf_path.name, resultado,
+        )
+        return resultado
+
+    # 2. Fallback: regex genéricos sobre o bloco do emitente
+    bloco_emitente = _extrair_bloco_emitente(texto)
+    resultado = _buscar_padroes(bloco_emitente, _PADROES_NF)
     if resultado:
         logger.info(
             "Fornecedor extraído do PDF NF-e '%s': %r", pdf_path.name, resultado
