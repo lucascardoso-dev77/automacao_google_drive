@@ -3426,3 +3426,117 @@
 2026-06-16 15:01:08,624 [INFO    ] gmail_service — Email 19ed1975e2bdc0d4 movido para PROCESSADO.
 2026-06-16 15:01:08,625 [INFO    ] __main__ — ✓ Email 19ed1975e2bdc0d4 processado com sucesso → 2026-06-16_TESTE_DE_ASSUNTO.pdf
 2026-06-16 15:01:08,635 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-17 17:55:01,124 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-17 17:55:01,160 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-17 17:55:01,160 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-17 17:55:01,213 [INFO    ] gmail_service — Renovando token de acesso do Gmail...
+2026-06-17 17:55:03,015 [INFO    ] gmail_service — Token salvo em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\token.json
+2026-06-17 17:55:03,135 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 17:55:03,253 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-17 17:55:03,394 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 17:55:03,534 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-17 17:55:03,605 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-17 17:55:05,995 [INFO    ] gmail_service — 1 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-17 17:55:05,995 [INFO    ] __main__ — 1 email(s) a processar.
+2026-06-17 17:55:06,004 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-17 17:59:19,469 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-17 17:59:19,473 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-17 17:59:19,473 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-17 17:59:19,490 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 17:59:19,497 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-17 17:59:19,502 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 17:59:19,511 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-17 17:59:19,542 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-17 17:59:29,230 [INFO    ] gmail_service — 1 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-17 17:59:29,231 [INFO    ] __main__ — 1 email(s) a processar.
+2026-06-17 17:59:29,238 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-17 18:00:04,990 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-17 18:00:04,990 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-17 18:00:04,991 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-17 18:00:05,002 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 18:00:05,011 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-17 18:00:05,020 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 18:00:05,026 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-17 18:00:05,032 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-17 18:00:06,529 [INFO    ] gmail_service — 2 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-17 18:00:06,529 [INFO    ] __main__ — 2 email(s) a processar.
+2026-06-17 18:00:06,532 [INFO    ] __main__ — ════════════════════════════════════════════════════════════
+2026-06-17 18:00:06,532 [INFO    ] __main__ — Iniciando processamento do email: 19ed76146afbf8a7
+2026-06-17 18:00:07,694 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76146afbf8a7\COMPROVANTE.jpeg (45940 bytes)
+2026-06-17 18:00:07,701 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76146afbf8a7\bol-NUTRIVIDA.pdf (214545 bytes)
+2026-06-17 18:00:07,717 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76146afbf8a7\DANFe de Devolucao (729) conferencia.pdf (355151 bytes)
+2026-06-17 18:00:07,787 [INFO    ] pdf_converter — Convertendo HTML do email → 00_email.pdf (estilo Gmail)
+2026-06-17 18:00:07,825 [INFO    ] pdf_converter — PDF estilo Gmail gerado: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\output\19ed76146afbf8a7\00_email.pdf
+2026-06-17 18:00:07,833 [INFO    ] pdf_converter — Convertendo COMPROVANTE.jpeg → COMPROVANTE.pdf
+2026-06-17 18:00:09,430 [INFO    ] __main__ — Anexo 1/3 convertido: COMPROVANTE.pdf
+2026-06-17 18:00:09,443 [INFO    ] pdf_converter — Convertendo bol-NUTRIVIDA.pdf → bol-NUTRIVIDA.pdf
+2026-06-17 18:00:09,487 [INFO    ] __main__ — Anexo 2/3 convertido: bol-NUTRIVIDA.pdf
+2026-06-17 18:00:09,497 [INFO    ] pdf_converter — Convertendo DANFe de Devolucao (729) conferencia.pdf → DANFe de Devolucao (729) conferencia.pdf
+2026-06-17 18:00:09,536 [INFO    ] __main__ — Anexo 3/3 convertido: DANFe de Devolucao (729) conferencia.pdf
+2026-06-17 18:00:09,555 [INFO    ] pdf_merger — Ordem de mesclagem: Outros → Outros → Outros → Email
+2026-06-17 18:00:09,765 [INFO    ] pdf_merger — PDF consolidado gerado: _merged_temp.pdf (4 páginas, 3 anexo(s))
+2026-06-17 18:00:09,774 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'COMPROVANTE.pdf'...
+2026-06-17 18:00:09,781 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'COMPROVANTE.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,793 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'bol-NUTRIVIDA.pdf'...
+2026-06-17 18:00:09,820 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'bol-NUTRIVIDA.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,838 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'DANFe de Devolucao (729) conferencia.pdf'...
+2026-06-17 18:00:09,883 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'DANFe de Devolucao (729) conferencia.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,889 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'bol-NUTRIVIDA.pdf'...
+2026-06-17 18:00:09,897 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'bol-NUTRIVIDA.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,904 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'DANFe de Devolucao (729) conferencia.pdf'...
+2026-06-17 18:00:09,922 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'DANFe de Devolucao (729) conferencia.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,936 [INFO    ] supplier_extractor — Tentando extrair cedente (boleto) de 'COMPROVANTE.pdf'...
+2026-06-17 18:00:09,946 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'COMPROVANTE.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,948 [INFO    ] supplier_extractor — Tentando extrair cedente (boleto) de 'bol-NUTRIVIDA.pdf'...
+2026-06-17 18:00:09,953 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'bol-NUTRIVIDA.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,955 [INFO    ] supplier_extractor — Tentando extrair cedente (boleto) de 'DANFe de Devolucao (729) conferencia.pdf'...
+2026-06-17 18:00:09,958 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'DANFe de Devolucao (729) conferencia.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,967 [INFO    ] supplier_extractor — Tentando extrair cedente (boleto) de 'bol-NUTRIVIDA.pdf'...
+2026-06-17 18:00:09,973 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'bol-NUTRIVIDA.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,975 [INFO    ] supplier_extractor — Tentando extrair cedente (boleto) de 'DANFe de Devolucao (729) conferencia.pdf'...
+2026-06-17 18:00:09,982 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'DANFe de Devolucao (729) conferencia.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:00:09,985 [WARNING ] supplier_extractor — Fornecedor não identificado em nenhum anexo; usando fallback 'DOCUMENTO_NAO_IDENTIFICADO'.
+2026-06-17 18:00:09,986 [INFO    ] supplier_extractor — Nome final gerado: 17-06-2026 - DOCUMENTO_NAO_IDENTIFICADO.pdf
+2026-06-17 18:00:09,989 [INFO    ] __main__ — Arquivo renomeado para: 17-06-2026 - DOCUMENTO_NAO_IDENTIFICADO.pdf
+2026-06-17 18:00:09,990 [INFO    ] __main__ — Classificação: Outros
+2026-06-17 18:00:13,710 [INFO    ] drive_service — Upload concluído: 17-06-2026 - DOCUMENTO_NAO_IDENTIFICADO.pdf → https://drive.google.com/file/d/1z_sboxoZVMR9RXpf4zY5Cj6Qc8-ICpkJ/view?usp=drivesdk
+2026-06-17 18:00:14,832 [INFO    ] gmail_service — Email 19ed76146afbf8a7 movido para PROCESSADO.
+2026-06-17 18:00:14,833 [INFO    ] __main__ — ✓ Email 19ed76146afbf8a7 processado com sucesso → 17-06-2026 - DOCUMENTO_NAO_IDENTIFICADO.pdf
+2026-06-17 18:00:14,838 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-17 18:07:03,558 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-17 18:07:03,558 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-17 18:07:03,559 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-17 18:07:03,571 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 18:07:03,577 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-17 18:07:03,582 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-17 18:07:03,590 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-17 18:07:03,614 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-17 18:07:05,066 [INFO    ] gmail_service — 2 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-17 18:07:05,067 [INFO    ] __main__ — 2 email(s) a processar.
+2026-06-17 18:07:05,070 [INFO    ] __main__ — ════════════════════════════════════════════════════════════
+2026-06-17 18:07:05,070 [INFO    ] __main__ — Iniciando processamento do email: 19ed76833669df33
+2026-06-17 18:07:06,225 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76833669df33\bol-NUTRIVIDA.pdf (214545 bytes)
+2026-06-17 18:07:06,228 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76833669df33\COMPROVANTE.jpeg (45940 bytes)
+2026-06-17 18:07:06,237 [INFO    ] gmail_service — Anexo salvo: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\downloads\19ed76833669df33\DANFe de Devolucao (729) conferencia.pdf (355151 bytes)
+2026-06-17 18:07:06,251 [INFO    ] pdf_converter — Convertendo HTML do email → 00_email.pdf (estilo Gmail)
+2026-06-17 18:07:06,288 [INFO    ] pdf_converter — PDF estilo Gmail gerado: c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\output\19ed76833669df33\00_email.pdf
+2026-06-17 18:07:06,293 [INFO    ] pdf_converter — Convertendo bol-NUTRIVIDA.pdf → bol-NUTRIVIDA.pdf
+2026-06-17 18:07:06,361 [INFO    ] __main__ — Anexo 1/3 convertido: bol-NUTRIVIDA.pdf
+2026-06-17 18:07:06,363 [INFO    ] pdf_converter — Convertendo COMPROVANTE.jpeg → COMPROVANTE.pdf
+2026-06-17 18:07:07,494 [INFO    ] __main__ — Anexo 2/3 convertido: COMPROVANTE.pdf
+2026-06-17 18:07:07,498 [INFO    ] pdf_converter — Convertendo DANFe de Devolucao (729) conferencia.pdf → DANFe de Devolucao (729) conferencia.pdf
+2026-06-17 18:07:07,521 [INFO    ] __main__ — Anexo 3/3 convertido: DANFe de Devolucao (729) conferencia.pdf
+2026-06-17 18:07:07,574 [INFO    ] pdf_merger — Ordem de mesclagem: Outros → Outros → Outros → Email
+2026-06-17 18:07:07,884 [INFO    ] pdf_merger — PDF consolidado gerado: _merged_temp.pdf (4 páginas, 3 anexo(s))
+2026-06-17 18:07:07,933 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'bol-NUTRIVIDA.pdf'...
+2026-06-17 18:07:09,734 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'COMPROVANTE.pdf'...
+2026-06-17 18:07:10,636 [WARNING ] supplier_extractor — Nenhuma biblioteca de extração de PDF disponível ou nenhum texto extraído de 'COMPROVANTE.pdf'. Instale pdfplumber ou PyMuPDF.
+2026-06-17 18:07:10,637 [INFO    ] supplier_extractor — Tentando extrair fornecedor (NF-e) de 'DANFe de Devolucao (729) conferencia.pdf'...
+2026-06-17 18:07:12,229 [INFO    ] supplier_extractor — Fornecedor extraído do PDF NF-e 'DANFe de Devolucao (729) conferencia.pdf': 'CNPJ / CPF DATA DA EMISSÃO'
+2026-06-17 18:07:12,232 [INFO    ] supplier_extractor — Nome final gerado: 17-06-2026 - CNPJ CPF DATA DA EMISSAO.pdf
+2026-06-17 18:07:12,234 [INFO    ] __main__ — Arquivo renomeado para: 17-06-2026 - CNPJ CPF DATA DA EMISSAO.pdf
+2026-06-17 18:07:12,234 [INFO    ] __main__ — Classificação: Outros
+2026-06-17 18:07:16,287 [INFO    ] drive_service — Upload concluído: 17-06-2026 - CNPJ CPF DATA DA EMISSAO.pdf → https://drive.google.com/file/d/1GEW28xnZpKuv5wbmtSFJGKum4kMDjbzR/view?usp=drivesdk
+2026-06-17 18:07:17,396 [INFO    ] gmail_service — Email 19ed76833669df33 movido para PROCESSADO.
+2026-06-17 18:07:17,396 [INFO    ] __main__ — ✓ Email 19ed76833669df33 processado com sucesso → 17-06-2026 - CNPJ CPF DATA DA EMISSAO.pdf
+2026-06-17 18:07:17,402 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.

@@ -29,6 +29,7 @@ from drive_service import DriveService
 from gmail_service import GmailService, EmailData
 from pdf_converter import PdfConverter
 from pdf_merger import PdfMerger
+from supplier_extractor import gerar_nome_final
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -133,12 +134,21 @@ class Pipeline:
             # 5. Anexos → PDF
             anexos_pdf = self._converter_anexos(email.anexos, pasta_trabalho)
 
-            # 6. Mesclagem
-            nome_seguro = self.classifier.sanitizar_nome_arquivo(email.assunto)
-            data_str = data_email.strftime("%Y-%m-%d")
-            nome_final = f"{data_str}_{nome_seguro}.pdf"
-            destino_final = pasta_trabalho / nome_final
+            # 6. Mesclagem — nome provisório para o arquivo de trabalho
+            destino_final = pasta_trabalho / "_merged_temp.pdf"
             self.merger.mesclar(email_pdf, anexos_pdf, destino_final)
+
+            # 6b. Geração do nome final com identificação do fornecedor
+            #     Hierarquia: XML NF-e → PDF DANFE → PDF Boleto → fallback
+            nome_final = gerar_nome_final(
+                data_email=data_email,
+                anexos_originais=email.anexos,
+                pdfs_convertidos=anexos_pdf,
+            )
+            destino_renomeado = pasta_trabalho / nome_final
+            destino_final.rename(destino_renomeado)
+            destino_final = destino_renomeado
+            logger.info("Arquivo renomeado para: %s", nome_final)
 
             # 7. Classificação
             texto_para_classificar = email.assunto + " " + email.corpo_texto
