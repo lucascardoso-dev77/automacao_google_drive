@@ -1,4 +1,4 @@
-#!C:\Users\AdminGrau\Desktop\automacao_google_drive\venv\Scripts\python.exe
+#!C:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\venv\Scripts\python.exe
 """A command line tool for extracting text and images from PDF and
 output it to plain text, html, xml or tags."""
 import argparse

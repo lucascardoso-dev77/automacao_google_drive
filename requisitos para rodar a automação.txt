@@ -1,0 +1,17 @@
+requisitos para rodar a automação 
+
+python 3.12
+
+remover 
+
+Remove-Item -Recurse -Force venv
+
+instala o venv
+
+
+python -m venv venv
+
+venv\Scripts\activate
+
+
+pip install -r requirements.txt
