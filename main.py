@@ -134,9 +134,18 @@ class Pipeline:
             # 5. Anexos → PDF
             anexos_pdf = self._converter_anexos(email.anexos, pasta_trabalho)
 
+            # 5b. Classifica cada PDF de anexo individualmente para que o
+            #     merger possa ordenar os documentos por categoria.
+            classificacoes_anexos = self._classificar_anexos(anexos_pdf)
+
             # 6. Mesclagem — nome provisório para o arquivo de trabalho
             destino_final = pasta_trabalho / "_merged_temp.pdf"
-            self.merger.mesclar(email_pdf, anexos_pdf, destino_final)
+            self.merger.mesclar(
+                email_pdf,
+                anexos_pdf,
+                destino_final,
+                classificacoes_anexos=classificacoes_anexos,
+            )
 
             # 6b. Geração do nome final com identificação do fornecedor
             #     Hierarquia: XML NF-e → PDF DANFE → PDF Boleto → fallback
@@ -168,6 +177,25 @@ class Pipeline:
             logger.debug("Pasta de trabalho removida: %s", pasta_trabalho)
 
         return nome_final, drive_link, classificacao
+
+    def _classificar_anexos(self, pdfs: list[Path]) -> list[str]:
+        """
+        Classifica cada PDF de anexo extraindo seu texto e aplicando o
+        Classifier — retorna uma lista na mesma ordem de `pdfs`.
+        """
+        from supplier_extractor import _extrair_texto_pdf  # importação local para evitar ciclo
+
+        classificacoes: list[str] = []
+        for pdf in pdfs:
+            try:
+                texto = _extrair_texto_pdf(pdf)
+                classificacao = self.classifier.classificar(texto) if texto else "Outros"
+            except Exception as exc:
+                logger.warning("Erro ao classificar '%s': %s — usando 'Outros'.", pdf.name, exc)
+                classificacao = "Outros"
+            logger.debug("Anexo '%s' classificado como '%s'.", pdf.name, classificacao)
+            classificacoes.append(classificacao)
+        return classificacoes
 
     def _converter_anexos(
         self, anexos: list[Path], pasta_saida: Path
