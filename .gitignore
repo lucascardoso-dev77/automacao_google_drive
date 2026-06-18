@@ -1,2 +1,20 @@
-# Credenciais Google
+# Ambiente virtual
+venv/
+
+# Tokens e credenciais
 token.json
+
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Banco de dados local
+processamentos.db
+
+# Logs
+logs/
+
+# Arquivos gerados
+output/
+downloads/

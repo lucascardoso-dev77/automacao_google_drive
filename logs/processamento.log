@@ -3706,3 +3706,17 @@
 2026-06-18 10:22:52,103 [INFO    ] gmail_service — Email 19edade86e376e13 movido para PROCESSADO.
 2026-06-18 10:22:52,103 [INFO    ] __main__ — ✓ Email 19edade86e376e13 processado com sucesso → 18-06-2026 - OLIVEIRA & COELHO MATERIAIS DE CONSTRUCAO LTDA.pdf
 2026-06-18 10:22:52,110 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
+2026-06-18 15:21:11,447 [INFO    ] __main__ — ╔══════════════════════════════════════════╗
+2026-06-18 15:21:11,449 [INFO    ] __main__ — ║   Automação Documental — Gmail + Drive   ║
+2026-06-18 15:21:11,449 [INFO    ] __main__ — ╚══════════════════════════════════════════╝
+2026-06-18 15:21:11,450 [INFO    ] gmail_service — Iniciando fluxo OAuth2 para Gmail...
+2026-06-18 15:21:40,493 [INFO    ] google_auth_oauthlib.flow — "GET /?state=vt3llCLSLRnc7TvvtjmqP2FM95QkHn&iss=https://accounts.google.com&code=4/0AdkVLPzqDt7wEs90n9KdN61rRQDpd7eEIgQwmRL389jcnvhBmiEmfohh8S-Y57k7IQ8V7w&scope=https://www.googleapis.com/auth/drive%20https://www.googleapis.com/auth/gmail.modify HTTP/1.1" 200 65
+2026-06-18 15:21:41,517 [INFO    ] gmail_service — Token salvo em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\token.json
+2026-06-18 15:21:41,524 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-18 15:21:41,580 [INFO    ] gmail_service — Gmail autenticado com sucesso.
+2026-06-18 15:21:41,602 [INFO    ] googleapiclient.discovery_cache — file_cache is only supported with oauth2client<4.0.0
+2026-06-18 15:21:41,636 [INFO    ] drive_service — Google Drive autenticado com sucesso.
+2026-06-18 15:21:41,663 [INFO    ] database — Banco de dados inicializado em c:\Users\SUPORTE-SPEEDY\Desktop\automacao_google_drive\processamentos.db
+2026-06-18 15:21:43,155 [INFO    ] gmail_service — 1 email(s) encontrado(s) na label 'PROCESSAR'.
+2026-06-18 15:21:43,156 [INFO    ] __main__ — 1 email(s) a processar.
+2026-06-18 15:21:43,160 [INFO    ] __main__ — Email 19ecd352e5580349 já processado — ignorando.
