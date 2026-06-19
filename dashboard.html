@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Automação Documental — Dashboard</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --bg2:      #1a1d27;
+    --bg3:      #22263a;
+    --border:   #2d3250;
+    --text:     #e8eaf0;
+    --muted:    #7a82a0;
+    --accent:   #4f7cff;
+    --green:    #22c55e;
+    --red:      #ef4444;
+    --amber:    #f59e0b;
+    --purple:   #a78bfa;
+    --teal:     #2dd4bf;
+    --radius:   10px;
+    --font:     'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  /* ── Layout ── */
+  .shell { display: flex; height: 100vh; overflow: hidden; }
+  .sidebar { width: 220px; min-width: 220px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; }
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+  /* ── Sidebar ── */
+  .logo { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+  .logo-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: .3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .nav { flex: 1; padding: 10px 8px; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; cursor: pointer; color: var(--muted); font-size: 13px; transition: all .15s; user-select: none; margin-bottom: 2px; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: rgba(79,124,255,.15); color: var(--accent); }
+  .nav-item svg { flex-shrink: 0; }
+  .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: .8px; text-transform: uppercase; padding: 14px 10px 6px; }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-left: auto; flex-shrink: 0; }
+  .status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  .status-dot.err { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .sidebar-footer { padding: 12px 18px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); }
+  .refresh-info { display: flex; align-items: center; gap: 6px; }
+  .spinner { width: 10px; height: 10px; border: 1.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: none; }
+  .spinner.active { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Topbar ── */
+  .topbar { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .topbar-title { font-size: 16px; font-weight: 600; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .btn { padding: 6px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-size: 12px; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--bg3); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { opacity: .88; }
+  .btn.danger { background: rgba(239,68,68,.12); border-color: var(--red); color: var(--red); }
+  .last-update { font-size: 11px; color: var(--muted); }
+
+  /* ── Content area ── */
+  .content { padding: 20px 24px; flex: 1; }
+
+  /* ── KPI cards ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .kpi.green::before { background: var(--green); }
+  .kpi.red::before { background: var(--red); }
+  .kpi.blue::before { background: var(--accent); }
+  .kpi.amber::before { background: var(--amber); }
+  .kpi.purple::before { background: var(--purple); }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-bottom: 8px; }
+  .kpi-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .kpi.green .kpi-value { color: var(--green); }
+  .kpi.red .kpi-value { color: var(--red); }
+  .kpi.blue .kpi-value { color: var(--accent); }
+  .kpi.amber .kpi-value { color: var(--amber); }
+  .kpi.purple .kpi-value { color: var(--purple); }
+
+  /* ── Grid 2 colunas ── */
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .row3 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+  /* ── Card ── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 13px; font-weight: 600; }
+  .card-body { padding: 14px 18px; }
+
+  /* ── Gráfico de barras simples ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { width: 90px; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--bg3); border-radius: 4px; height: 18px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; display: flex; align-items: center; padding: 0 8px; }
+  .bar-fill span { font-size: 10px; font-weight: 600; color: #fff; white-space: nowrap; }
+
+  /* ── Volume por dia ── */
+  .sparkline { display: flex; align-items: flex-end; gap: 4px; height: 60px; padding: 0 4px; }
+  .spark-col { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+  .spark-bar { width: 100%; border-radius: 3px 3px 0 0; transition: height .3s; min-height: 2px; }
+  .spark-day { font-size: 9px; color: var(--muted); white-space: nowrap; margin-top: 4px; }
+
+  /* ── Tabela ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; background: var(--bg2); position: sticky; top: 0; }
+  tbody tr { border-bottom: 1px solid rgba(45,50,80,.5); transition: background .12s; }
+  tbody tr:hover { background: rgba(79,124,255,.05); cursor: pointer; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 10px 12px; vertical-align: middle; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.wrap { white-space: normal; word-break: break-word; }
+
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+  .badge.concluido { background: rgba(34,197,94,.12); color: var(--green); }
+  .badge.erro { background: rgba(239,68,68,.12); color: var(--red); }
+  .badge.processando { background: rgba(245,158,11,.12); color: var(--amber); animation: blink 1.2s infinite; }
+  .badge.pendente { background: rgba(122,130,160,.12); color: var(--muted); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  .badge-classif { display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 500; background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+  .badge-classif.nf { background: rgba(79,124,255,.12); color: var(--accent); border-color: rgba(79,124,255,.3); }
+  .badge-classif.boleto { background: rgba(245,158,11,.12); color: var(--amber); border-color: rgba(245,158,11,.3); }
+  .badge-classif.contrato { background: rgba(167,139,250,.12); color: var(--purple); border-color: rgba(167,139,250,.3); }
+  .badge-classif.cemig { background: rgba(45,212,191,.12); color: var(--teal); border-color: rgba(45,212,191,.3); }
+  .badge-classif.comp { background: rgba(34,197,94,.12); color: var(--green); border-color: rgba(34,197,94,.3); }
+
+  /* ── Filtros ── */
+  .filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: 8px; padding: 3px; border: 1px solid var(--border); }
+  .filter-tab { padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--muted); transition: all .12s; user-select: none; }
+  .filter-tab.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .search-wrap { flex: 1; max-width: 280px; position: relative; }
+  .search-wrap input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px 6px 30px; color: var(--text); font-size: 12px; outline: none; transition: border-color .15s; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .count-info { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+  /* ── Link Drive ── */
+  .drive-link { color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .drive-link:hover { text-decoration: underline; }
+
+  /* ── Modal de rastreabilidade ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; width: 680px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
+  .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 5px; }
+  .modal-close:hover { color: var(--text); background: var(--bg3); }
+  .modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+
+  .trace-step { display: flex; gap: 14px; }
+  .trace-line { display: flex; flex-direction: column; align-items: center; }
+  .trace-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+  .trace-dot.done { background: var(--green); }
+  .trace-dot.fail { background: var(--red); }
+  .trace-dot.muted { background: var(--muted); }
+  .trace-connector { width: 2px; background: var(--border); flex: 1; margin: 4px 0; min-height: 20px; }
+  .trace-content { flex: 1; padding-bottom: 14px; }
+  .trace-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .trace-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .trace-detail code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 10px; color: var(--teal); }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { background: var(--bg3); border-radius: 7px; padding: 10px 12px; }
+  .field-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .field-value { font-size: 12px; color: var(--text); word-break: break-all; }
+
+  .error-box { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; padding: 12px 14px; }
+  .error-label { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--red); margin-bottom: 6px; }
+  .error-text { font-size: 11px; color: #fca5a5; font-family: monospace; white-space: pre-wrap; }
+
+  /* ── Painel de Erros ── */
+  .error-timeline { display: flex; flex-direction: column; gap: 10px; }
+  .error-item { background: var(--bg3); border: 1px solid rgba(239,68,68,.2); border-left: 3px solid var(--red); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all .15s; }
+  .error-item:hover { border-color: var(--red); background: rgba(239,68,68,.06); }
+  .error-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .error-item-subject { font-size: 13px; font-weight: 600; }
+  .error-item-time { font-size: 11px; color: var(--muted); flex-shrink: 0; margin-left: 10px; }
+  .error-item-from { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .error-item-msg { font-size: 11px; color: #fca5a5; font-family: monospace; background: rgba(239,68,68,.06); padding: 6px 8px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ── Empty state ── */
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; color: var(--muted); gap: 10px; }
+  .empty svg { opacity: .3; }
+  .empty p { font-size: 13px; }
+
+  /* ── Pagination ── */
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  .page-btns { display: flex; gap: 6px; }
+  .page-btn { padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; font-size: 11px; }
+  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .page-btn:disabled { opacity: .35; cursor: default; }
+
+  /* ── Donut chart (CSS) ── */
+  .donut-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut { position: relative; width: 80px; height: 80px; }
+  .donut svg { transform: rotate(-90deg); }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-pct { font-size: 16px; font-weight: 700; color: var(--green); }
+  .donut-lbl { font-size: 9px; color: var(--muted); }
+  .donut-legend { display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Tabs do main ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Timeline ao vivo ── */
+  .live-feed { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+  .feed-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; background: var(--bg3); border-radius: 8px; border: 1px solid var(--border); transition: all .3s; }
+  .feed-item.new { border-color: var(--accent); background: rgba(79,124,255,.06); }
+  .feed-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .feed-icon.ok { background: rgba(34,197,94,.15); }
+  .feed-icon.fail { background: rgba(239,68,68,.15); }
+  .feed-icon.proc { background: rgba(245,158,11,.15); animation: blink 1s infinite; }
+  .feed-info { flex: 1; min-width: 0; }
+  .feed-subject { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .feed-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .feed-time { font-size: 10px; color: var(--muted); flex-shrink: 0; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">📄 Automação Documental</div>
+      <div class="logo-sub">Gmail → Drive Pipeline</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Painel</div>
+      <div class="nav-item active" onclick="showPage('overview')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Visão Geral
+        <span class="status-dot live" id="conn-dot" title="Conectado"></span>
+      </div>
+      <div class="nav-item" onclick="showPage('live')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Ao Vivo
+      </div>
+
+      <div class="nav-section">Registros</div>
+      <div class="nav-item" onclick="showPage('todos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Todos
+        <span id="badge-todos" style="margin-left:auto;background:var(--bg3);border-radius:10px;padding:1px 7px;font-size:10px;color:var(--muted);">–</span>
+      </div>
+      <div class="nav-item" onclick="showPage('erros')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Erros
+        <span id="badge-erros" style="margin-left:auto;border-radius:10px;padding:1px 7px;font-size:10px;display:none;background:rgba(239,68,68,.15);color:var(--red);">0</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="refresh-info">
+        <div class="spinner" id="spinner"></div>
+        <span id="refresh-label">Atualiza a cada 5s</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Visão Geral</div>
+      <div class="topbar-actions">
+        <span class="last-update" id="last-update">–</span>
+        <button class="btn" onclick="forceRefresh()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Atualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ PÁGINA: Visão Geral ══ -->
+    <div class="page active content" id="page-overview">
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi blue">
+          <div class="kpi-label">Total processado</div>
+          <div class="kpi-value" id="kpi-total">–</div>
+          <div class="kpi-sub" id="kpi-hoje">– hoje</div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-label">Concluídos</div>
+          <div class="kpi-value" id="kpi-concluido">–</div>
+          <div class="kpi-sub" id="kpi-taxa">taxa de sucesso</div>
+        </div>
+        <div class="kpi red">
+          <div class="kpi-label">Erros</div>
+          <div class="kpi-value" id="kpi-erro">–</div>
+          <div class="kpi-sub">necessitam atenção</div>
+        </div>
+        <div class="kpi amber">
+          <div class="kpi-label">Tempo médio</div>
+          <div class="kpi-value" id="kpi-tempo">–</div>
+          <div class="kpi-sub">por documento</div>
+        </div>
+      </div>
+
+      <div class="row3">
+        <!-- Volume por dia -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Volume — últimos 14 dias</span>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;gap:14px;margin-bottom:8px;font-size:10px;">
+              <span style="display:flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:8px;height:8px;background:var(--accent);border-radius:2px;display:inline-block"></span>Concluído</span>
+              <span style="display:flex;align-items:center;gap:4px;color:var(--muted)"><span style="width:8px;height:8px;background:var(--red);border-radius:2px;display:inline-block"></span>Erro</span>
+            </div>
+            <div class="sparkline" id="spark-chart"></div>
+          </div>
+        </div>
+
+        <!-- Taxa de sucesso donut -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Taxa de sucesso</span></div>
+          <div class="card-body">
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="var(--bg3)" stroke-width="10"/>
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="var(--green)" stroke-width="10"
+                    id="donut-arc" stroke-dasharray="0 188" stroke-linecap="round"/>
+                </svg>
+                <div class="donut-center">
+                  <div class="donut-pct" id="donut-pct">–</div>
+                  <div class="donut-lbl">sucesso</div>
+                </div>
+              </div>
+              <div class="donut-legend" id="donut-legend"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <!-- Por classificação -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Por classificação</span></div>
+          <div class="card-body">
+            <div class="bar-chart" id="chart-classif"></div>
+          </div>
+        </div>
+
+        <!-- Top remetentes -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Top remetentes</span></div>
+          <div class="card-body">
+            <div class="bar-chart" id="chart-remetentes"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PÁGINA: Ao Vivo ══ -->
+    <div class="page content" id="page-live">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span class="card-title">
+            <span style="display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;margin-right:7px"></span>
+            Feed em tempo real
+          </span>
+          <span class="last-update" id="live-count">–</span>
+        </div>
+        <div class="card-body">
+          <div class="live-feed" id="live-feed">
+            <div class="empty">
+              <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <p>Aguardando processamentos...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Processando agora -->
+      <div class="card" id="card-processando" style="display:none">
+        <div class="card-header">
+          <span class="card-title">⚡ Processando agora</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Assunto</th><th>Remetente</th><th>Iniciado em</th></tr></thead>
+            <tbody id="tbody-processando"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PÁGINA: Todos ══ -->
+    <div class="page" id="page-todos">
+      <div class="content" style="padding-bottom:0">
+        <div class="filters">
+          <div class="filter-tabs">
+            <div class="filter-tab active" data-status="todos" onclick="setFiltroStatus(this)">Todos</div>
+            <div class="filter-tab" data-status="concluido" onclick="setFiltroStatus(this)">Concluídos</div>
+            <div class="filter-tab" data-status="erro" onclick="setFiltroStatus(this)">Erros</div>
+            <div class="filter-tab" data-status="processando" onclick="setFiltroStatus(this)">Processando</div>
+          </div>
+          <div class="search-wrap">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="search-input" placeholder="Buscar assunto, remetente, PDF..." oninput="onSearch(this.value)">
+          </div>
+          <span class="count-info" id="count-info"></span>
+        </div>
+      </div>
+      <div class="card" style="margin: 0 24px 24px; border-top: none; border-radius: 0 0 var(--radius) var(--radius);">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Assunto</th>
+                <th>Remetente</th>
+                <th>Classificação</th>
+                <th>Status</th>
+                <th>Arquivo PDF</th>
+                <th>Criado em</th>
+                <th>Tempo</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-todos"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination-todos"></div>
+      </div>
+    </div>
+
+    <!-- ══ PÁGINA: Erros ══ -->
+    <div class="page content" id="page-erros">
+      <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;color:var(--muted)">Clique em um item para ver detalhes e rastreabilidade completa</span>
+      </div>
+      <div class="error-timeline" id="erros-list">
+        <div class="empty">
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <p>Nenhum erro registrado 🎉</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Modal de rastreabilidade ── -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔍 Rastreabilidade do Documento</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:5000/api';
+let stats = null;
+let currentPage = 'overview';
+let filtroStatus = 'todos';
+let buscaTexto = '';
+let offset = 0;
+const LIMIT = 25;
+let refreshTimer = null;
+let prevIds = new Set();
+let liveFeedItems = [];
+
+// ── Navegação ──────────────────────────────────────────────────────────────
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(name)) n.classList.add('active');
+  });
+  currentPage = name;
+  const titles = { overview: 'Visão Geral', live: 'Feed Ao Vivo', todos: 'Todos os Registros', erros: 'Registros com Erro' };
+  document.getElementById('page-title').textContent = titles[name] || name;
+  refreshCurrentPage();
+}
+
+// ── Refresh ────────────────────────────────────────────────────────────────
+
+function forceRefresh() { refreshCurrentPage(); }
+
+function refreshCurrentPage() {
+  if (currentPage === 'overview') loadOverview();
+  else if (currentPage === 'live') loadLive();
+  else if (currentPage === 'todos') loadTodos();
+  else if (currentPage === 'erros') loadErros();
+}
+
+function setSpinner(on) {
+  document.getElementById('spinner').classList.toggle('active', on);
+}
+
+async function fetchAPI(path) {
+  const r = await fetch(API + path, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function updateLastUpdate() {
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    'Atualizado ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function setConnStatus(ok) {
+  const dot = document.getElementById('conn-dot');
+  dot.className = 'status-dot ' + (ok ? 'live' : 'err');
+  dot.title = ok ? 'Conectado' : 'Sem conexão com a API';
+}
+
+// ── Visão Geral ───────────────────────────────────────────────────────────
+
+async function loadOverview() {
+  setSpinner(true);
+  try {
+    stats = await fetchAPI('/stats');
+    setConnStatus(true);
+    renderKPIs(stats);
+    renderSparkline(stats.volume_por_dia);
+    renderDonut(stats);
+    renderBarChart('chart-classif', stats.por_classificacao, 'classificacao', colorClassif);
+    renderBarChart('chart-remetentes', stats.por_remetente, 'remetente', () => 'var(--accent)');
+    updateLastUpdate();
+
+    // Badge erros
+    const be = document.getElementById('badge-erros');
+    if (stats.erro > 0) {
+      be.style.display = 'inline';
+      be.textContent = stats.erro;
+    } else {
+      be.style.display = 'none';
+    }
+    document.getElementById('badge-todos').textContent = stats.total;
+  } catch(e) {
+    setConnStatus(false);
+    console.error('Erro ao carregar stats:', e);
+  }
+  setSpinner(false);
+}
+
+function renderKPIs(s) {
+  document.getElementById('kpi-total').textContent = s.total;
+  document.getElementById('kpi-hoje').textContent = s.hoje + ' hoje';
+  document.getElementById('kpi-concluido').textContent = s.concluido;
+  document.getElementById('kpi-taxa').textContent = s.taxa_sucesso + '% taxa de sucesso';
+  document.getElementById('kpi-erro').textContent = s.erro;
+  const t = s.tempo_medio_s;
+  document.getElementById('kpi-tempo').textContent = t >= 60 ? (t/60).toFixed(1) + 'm' : t + 's';
+}
+
+function renderSparkline(dias) {
+  const el = document.getElementById('spark-chart');
+  if (!dias || !dias.length) { el.innerHTML = '<span style="color:var(--muted);font-size:11px">Sem dados</span>'; return; }
+  const max = Math.max(...dias.map(d => d.total), 1);
+  el.innerHTML = dias.map(d => {
+    const hOk = Math.round((d.ok / max) * 52);
+    const hErr = Math.round((d.erros / max) * 52);
+    const label = d.dia ? d.dia.slice(5) : '';
+    return `<div class="spark-col">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;gap:1px;height:56px">
+        ${hErr ? `<div class="spark-bar" style="height:${hErr}px;background:var(--red);opacity:.7"></div>` : ''}
+        ${hOk ? `<div class="spark-bar" style="height:${hOk}px;background:var(--accent)"></div>` : ''}
+      </div>
+      <div class="spark-day">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDonut(s) {
+  const pct = s.taxa_sucesso;
+  const circ = 188;
+  const fill = (pct / 100) * circ;
+  document.getElementById('donut-arc').setAttribute('stroke-dasharray', `${fill} ${circ}`);
+  document.getElementById('donut-pct').textContent = pct + '%';
+  document.getElementById('donut-legend').innerHTML = `
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span>${s.concluido} concluídos</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span>${s.erro} erros</span></div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div><span>${s.processando} processando</span></div>
+  `;
+}
+
+function renderBarChart(id, data, key, colorFn) {
+  const el = document.getElementById(id);
+  if (!data || !data.length) { el.innerHTML = '<span style="color:var(--muted);font-size:11px">Sem dados</span>'; return; }
+  const max = Math.max(...data.map(d => d.n), 1);
+  el.innerHTML = data.map(d => {
+    const pct = Math.round((d.n / max) * 100);
+    const label = (d[key] || '(sem)').length > 14 ? d[key].slice(0,14) + '…' : (d[key] || '(sem)');
+    // Extrai email se remetente tiver <email>
+    const displayLabel = key === 'remetente' ? extractEmail(d[key]) : label;
+    return `<div class="bar-row">
+      <div class="bar-label" title="${d[key]}">${displayLabel}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${colorFn(d[key])}">
+          <span>${d.n}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function extractEmail(remetente) {
+  if (!remetente) return '(sem)';
+  const m = remetente.match(/<([^>]+)>/);
+  if (m) return m[1].slice(0, 20) + (m[1].length > 20 ? '…' : '');
+  return remetente.slice(0, 20) + (remetente.length > 20 ? '…' : '');
+}
+
+// ── Feed ao vivo ──────────────────────────────────────────────────────────
+
+async function loadLive() {
+  setSpinner(true);
+  try {
+    const data = await fetchAPI('/processamentos?limit=20');
+    setConnStatus(true);
+    const items = data.items || [];
+
+    // Detecta novos itens
+    const newIds = new Set(items.map(i => i.gmail_message_id));
+    const isFirst = prevIds.size === 0;
+
+    const feed = document.getElementById('live-feed');
+    feed.innerHTML = '';
+
+    items.forEach(item => {
+      const isNew = !isFirst && !prevIds.has(item.gmail_message_id);
+      const div = document.createElement('div');
+      div.className = 'feed-item' + (isNew ? ' new' : '');
+      div.onclick = () => openModal(item.gmail_message_id);
+
+      const iconClass = item.status === 'concluido' ? 'ok' : item.status === 'erro' ? 'fail' : 'proc';
+      const icon = item.status === 'concluido' ? '✓' : item.status === 'erro' ? '✕' : '⟳';
+      const iconColor = item.status === 'concluido' ? 'var(--green)' : item.status === 'erro' ? 'var(--red)' : 'var(--amber)';
+
+      div.innerHTML = `
+        <div class="feed-icon ${iconClass}"><span style="color:${iconColor};font-weight:700;font-size:13px">${icon}</span></div>
+        <div class="feed-info">
+          <div class="feed-subject">${esc(item.assunto || '(sem assunto)')}</div>
+          <div class="feed-meta">${esc(item.remetente || '')} ${item.classificacao ? '· ' + esc(item.classificacao) : ''}</div>
+        </div>
+        <div class="feed-time">${relTime(item.criado_em)}</div>
+      `;
+      feed.appendChild(div);
+    });
+
+    if (!items.length) {
+      feed.innerHTML = `<div class="empty"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><p>Nenhum processamento ainda</p></div>`;
+    }
+
+    prevIds = newIds;
+    document.getElementById('live-count').textContent = `${items.length} registros`;
+
+    // Processando agora
+    const proc = items.filter(i => i.status === 'processando');
+    const cardProc = document.getElementById('card-processando');
+    if (proc.length) {
+      cardProc.style.display = 'block';
+      document.getElementById('tbody-processando').innerHTML = proc.map(i => `
+        <tr onclick="openModal('${i.gmail_message_id}')">
+          <td>${esc(i.assunto)}</td>
+          <td>${esc(i.remetente)}</td>
+          <td>${fmtDate(i.criado_em)}</td>
+        </tr>
+      `).join('');
+    } else {
+      cardProc.style.display = 'none';
+    }
+
+    updateLastUpdate();
+  } catch(e) {
+    setConnStatus(false);
+  }
+  setSpinner(false);
+}
+
+// ── Todos ────────────────────────────────────────────────────────────────
+
+function setFiltroStatus(el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  filtroStatus = el.dataset.status;
+  offset = 0;
+  loadTodos();
+}
+
+let searchTimer = null;
+function onSearch(v) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { buscaTexto = v; offset = 0; loadTodos(); }, 350);
+}
+
+async function loadTodos() {
+  setSpinner(true);
+  try {
+    const qs = `?status=${filtroStatus}&limit=${LIMIT}&offset=${offset}${buscaTexto ? '&busca=' + encodeURIComponent(buscaTexto) : ''}`;
+    const data = await fetchAPI('/processamentos' + qs);
+    setConnStatus(true);
+    const tbody = document.getElementById('tbody-todos');
+    const items = data.items || [];
+
+    tbody.innerHTML = items.map(i => {
+      const dur = calcDur(i.criado_em, i.atualizado_em, i.status);
+      return `<tr onclick="openModal('${i.gmail_message_id}')">
+        <td style="color:var(--muted)">#${i.id}</td>
+        <td style="max-width:160px" title="${esc(i.assunto)}">${esc(i.assunto || '(sem assunto)')}</td>
+        <td style="max-width:130px" title="${esc(i.remetente)}">${extractEmail(i.remetente)}</td>
+        <td>${badgeClassif(i.classificacao)}</td>
+        <td>${badgeStatus(i.status)}</td>
+        <td style="max-width:160px">
+          ${i.drive_link
+            ? `<a class="drive-link" href="${i.drive_link}" target="_blank" onclick="event.stopPropagation()">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                ${esc((i.nome_pdf || '').slice(0,22))}${(i.nome_pdf||'').length>22?'…':''}
+              </a>`
+            : `<span style="color:var(--muted)">${esc(i.nome_pdf||'–')}</span>`}
+        </td>
+        <td style="color:var(--muted)">${fmtDate(i.criado_em)}</td>
+        <td style="color:var(--muted)">${dur}</td>
+      </tr>`;
+    }).join('');
+
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><p>Nenhum registro encontrado</p></div></td></tr>`;
+    }
+
+    // Paginação
+    const total = data.total;
+    document.getElementById('count-info').textContent = `${total} registros`;
+    const totalPages = Math.ceil(total / LIMIT);
+    const currentPageNum = Math.floor(offset / LIMIT) + 1;
+    document.getElementById('pagination-todos').innerHTML = `
+      <span>${(offset+1)}–${Math.min(offset+LIMIT, total)} de ${total}</span>
+      <div class="page-btns">
+        <button class="page-btn" onclick="changePage(-1)" ${currentPageNum<=1?'disabled':''}>← Anterior</button>
+        <button class="page-btn" onclick="changePage(1)" ${currentPageNum>=totalPages?'disabled':''}>Próxima →</button>
+      </div>
+    `;
+    updateLastUpdate();
+  } catch(e) {
+    setConnStatus(false);
+  }
+  setSpinner(false);
+}
+
+function changePage(dir) {
+  offset = Math.max(0, offset + dir * LIMIT);
+  loadTodos();
+}
+
+// ── Erros ─────────────────────────────────────────────────────────────────
+
+async function loadErros() {
+  setSpinner(true);
+  try {
+    const data = await fetchAPI('/erros');
+    setConnStatus(true);
+    const el = document.getElementById('erros-list');
+    if (!data || !data.length) {
+      el.innerHTML = `<div class="empty">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <p>Nenhum erro registrado 🎉</p></div>`;
+    } else {
+      el.innerHTML = data.map(i => `
+        <div class="error-item" onclick="openModal('${i.gmail_message_id}')">
+          <div class="error-item-header">
+            <div class="error-item-subject">${esc(i.assunto || '(sem assunto)')}</div>
+            <div class="error-item-time">${fmtDate(i.atualizado_em)}</div>
+          </div>
+          <div class="error-item-from">De: ${esc(i.remetente || '–')} · ID: <code style="font-size:10px;color:var(--teal)">${i.gmail_message_id}</code></div>
+          ${i.erro ? `<div class="error-item-msg">${esc(i.erro)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+    updateLastUpdate();
+  } catch(e) {
+    setConnStatus(false);
+  }
+  setSpinner(false);
+}
+
+// ── Modal de rastreabilidade ──────────────────────────────────────────────
+
+async function openModal(msgId) {
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('modal-body').innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted)">Carregando...</div>`;
+  try {
+    const d = await fetchAPI('/rastrear/' + msgId);
+    renderModal(d);
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = `<div style="color:var(--red)">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function renderModal(d) {
+  const dur = calcDur(d.criado_em, d.atualizado_em, d.status);
+  const steps = [
+    { label: 'Email recebido', detail: `Assunto: <code>${esc(d.assunto)}</code><br>De: <code>${esc(d.remetente)}</code><br>Data: ${esc(d.data_email)}`, done: true },
+    { label: 'Registrado no banco', detail: `ID SQLite: <code>${d.id}</code> · Gmail ID: <code>${d.gmail_message_id}</code><br>Iniciado em: ${esc(d.criado_em)}`, done: true },
+    { label: 'Conversão e mesclagem de PDFs', detail: d.nome_pdf ? `Arquivo gerado: <code>${esc(d.nome_pdf)}</code>` : 'Não concluído', done: !!d.nome_pdf },
+    { label: 'Classificação', detail: d.classificacao ? `Categoria: <code>${esc(d.classificacao)}</code>` : 'Não classificado', done: !!d.classificacao },
+    { label: 'Upload para Google Drive', detail: d.drive_link ? `<a href="${d.drive_link}" target="_blank" class="drive-link">Abrir arquivo no Drive ↗</a>` : 'Não realizado', done: !!d.drive_link },
+    { label: 'Finalizado', detail: `Status: <code>${d.status}</code> · Duração total: <code>${dur}</code><br>Atualizado em: ${esc(d.atualizado_em)}`,
+      done: d.status === 'concluido', fail: d.status === 'erro' },
+  ];
+
+  const stepsHTML = steps.map((s, i) => `
+    <div class="trace-step">
+      <div class="trace-line">
+        <div class="trace-dot ${s.fail ? 'fail' : s.done ? 'done' : 'muted'}"></div>
+        ${i < steps.length - 1 ? '<div class="trace-connector"></div>' : ''}
+      </div>
+      <div class="trace-content">
+        <div class="trace-label">${s.label}</div>
+        <div class="trace-detail">${s.detail}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const errorHTML = d.erro ? `
+    <div class="error-box">
+      <div class="error-label">⚠ Mensagem de erro</div>
+      <div class="error-text">${esc(d.erro)}</div>
+    </div>
+  ` : '';
+
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-size:16px;font-weight:700">${esc(d.assunto || '(sem assunto)')}</span>
+      ${badgeStatus(d.status)}
+    </div>
+    <div style="font-size:11px;color:var(--muted)">ID Gmail: <code style="color:var(--teal)">${d.gmail_message_id}</code></div>
+
+    <div style="margin-top:4px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Linha do tempo</div>
+      ${stepsHTML}
+    </div>
+
+    ${errorHTML}
+
+    <div>
+      <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Campos completos</div>
+      <div class="field-grid">
+        ${[
+          ['ID', d.id],
+          ['Status', d.status],
+          ['Remetente', d.remetente],
+          ['Data do email', d.data_email],
+          ['Classificação', d.classificacao || '–'],
+          ['Tempo total', dur],
+          ['Criado em', d.criado_em],
+          ['Atualizado em', d.atualizado_em],
+          ['Nome do PDF', d.nome_pdf || '–'],
+        ].map(([l, v]) => `<div class="field"><div class="field-label">${l}</div><div class="field-value">${esc(String(v||'–'))}</div></div>`).join('')}
+        ${d.drive_link ? `<div class="field" style="grid-column:span 2"><div class="field-label">Link Drive</div><div class="field-value"><a href="${d.drive_link}" target="_blank" class="drive-link">Abrir no Google Drive ↗</a></div></div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '–';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  } catch { return iso; }
+}
+
+function relTime(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60) return 'agora';
+  if (diff < 3600) return Math.floor(diff/60) + 'm atrás';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h atrás';
+  return Math.floor(diff/86400) + 'd atrás';
+}
+
+function calcDur(start, end, status) {
+  if (!start) return '–';
+  const a = new Date(start), b = new Date(end || Date.now());
+  const s = Math.round((b - a) / 1000);
+  if (s < 60) return s + 's';
+  return (s/60).toFixed(1) + 'min';
+}
+
+function badgeStatus(s) {
+  const map = { concluido: '✓ Concluído', erro: '✕ Erro', processando: '⟳ Processando', pendente: 'Pendente' };
+  return `<span class="badge ${s}">${map[s] || s}</span>`;
+}
+
+function badgeClassif(c) {
+  if (!c) return '<span class="badge-classif">–</span>';
+  const cls = c.toLowerCase().includes('nota') ? 'nf'
+    : c.toLowerCase().includes('boleto') ? 'boleto'
+    : c.toLowerCase().includes('contrato') ? 'contrato'
+    : c.toLowerCase().includes('cemig') ? 'cemig'
+    : c.toLowerCase().includes('comprovante') ? 'comp' : '';
+  return `<span class="badge-classif ${cls}">${esc(c)}</span>`;
+}
+
+function colorClassif(c) {
+  if (!c) return 'var(--muted)';
+  c = c.toLowerCase();
+  if (c.includes('nota')) return 'var(--accent)';
+  if (c.includes('boleto')) return 'var(--amber)';
+  if (c.includes('contrato')) return 'var(--purple)';
+  if (c.includes('cemig')) return 'var(--teal)';
+  if (c.includes('comprovante')) return 'var(--green)';
+  return 'var(--muted)';
+}
+
+// ── Auto-refresh loop ─────────────────────────────────────────────────────
+
+function startAutoRefresh() {
+  refreshTimer = setInterval(() => { refreshCurrentPage(); }, 5000);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── Init ──────────────────────────────────────────────────────────────────
+loadOverview();
+startAutoRefresh();
+</script>
+</body>
+</html>

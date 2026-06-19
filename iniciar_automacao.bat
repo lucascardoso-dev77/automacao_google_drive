@@ -4,9 +4,9 @@ title Automacao Documental - Gmail + Drive
 :: ============================================================
 ::  CONFIGURACOES - ajuste se necessario
 :: ============================================================
-set PYTHON=python
+set PYTHON=py -3.12
 set SCRIPT=main.py
-set INTERVALO=10
+set INTERVALO=8
 :: INTERVALO em segundos entre cada execucao (padrao: 300 = 5 minutos)
 :: ============================================================
 
@@ -14,6 +14,7 @@ echo.
 echo  =============================================
 echo   Automacao Documental - Gmail + Drive
 echo   Loop a cada %INTERVALO%s  (Ctrl+C para parar)
+echo   Dashboard: http://localhost:5000
 echo  =============================================
 echo.
 
@@ -47,6 +48,19 @@ if not exist ".env" (
     pause
 )
 
+:: Sobe o dashboard em janela separada, mantido vivo o tempo todo
+:: (independente dos reinicios do loop de automacao abaixo)
+if exist "iniciar_dashboard.bat" (
+    echo Iniciando dashboard em janela separada...
+    start "Dashboard - Automacao Documental" cmd /k "iniciar_dashboard.bat"
+
+    :: Aguarda 2s para o servidor subir antes de abrir o navegador
+    ping -n 3 127.0.0.1 >nul
+    start http://localhost:5000
+) else (
+    echo [AVISO] iniciar_dashboard.bat nao encontrado. Dashboard nao sera iniciado.
+)
+
 :LOOP
 echo.
 echo [%date% %time%] Iniciando execucao...
@@ -63,6 +77,9 @@ if errorlevel 1 (
 )
 
 echo ---------------------------------------------
-ping -n %INTERVALO% 127.0.0.1 >nul
+:: Aguarda INTERVALO segundos antes do proximo ciclo
+:: (ping -n N = N-1 segundos de espera real)
+set /a PING_COUNT=%INTERVALO%+1
+ping -n %PING_COUNT% 127.0.0.1 >nul
 
 goto LOOP

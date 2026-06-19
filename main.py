@@ -227,6 +227,11 @@ class Pipeline:
 
 
 # ── Execução ──────────────────────────────────────────────────────────────────
+# NOTA: o dashboard NÃO sobe mais aqui. Como este script é reiniciado a cada
+# ciclo pelo iniciar_automacao.bat (loop com `py main.py`), uma thread daemon
+# criada aqui morre junto com o processo a cada execução — o dashboard ficaria
+# "no ar" só durante os poucos segundos do pipeline. Agora ele roda como
+# processo independente e persistente, iniciado por iniciar_dashboard.bat.
 
 configurar_logging()
 logger = logging.getLogger(__name__)
@@ -235,4 +240,5 @@ if __name__ == "__main__":
     logger.info("╔══════════════════════════════════════════╗")
     logger.info("║   Automação Documental — Gmail + Drive   ║")
     logger.info("╚══════════════════════════════════════════╝")
+
     Pipeline().executar()
