@@ -3,9 +3,12 @@ drive_service.py - Integração com a API do Google Drive.
 
 Responsabilidades:
   • Autenticação OAuth2 (compartilha token com Gmail)
-  • Criação da estrutura /Documentos/ANO/MES/
+  • Criação da estrutura <PASTA_RAIZ>/ANO/MES/ no Drive
   • Upload do PDF consolidado com retry automático
   • Retorno do link de visualização público
+
+A pasta raiz é definida em drive_config.json (gerenciado por folder_selector.py).
+Se o arquivo não existir, usa DRIVE_ROOT_FOLDER_NAME do config.py como fallback.
 """
 
 import logging
@@ -48,7 +51,7 @@ class DriveService:
         self._autenticar()
         self._cache_pastas: dict[str, str] = {}  # chave → folder_id
 
-    # ── Autenticação ─────────────────────────────────────────────────────────
+    # ── Autenticação ──────────────────────────────────────────────────────────
 
     def _autenticar(self) -> None:
         """Reutiliza o token OAuth2 gerado pelo GmailService, se existir."""
@@ -74,6 +77,13 @@ class DriveService:
         self._service = build("drive", "v3", credentials=self._creds)
         logger.info("Google Drive autenticado com sucesso.")
 
+    # ── Expõe o service autenticado (usado pelo folder_selector) ─────────────
+
+    @property
+    def service(self) -> Any:
+        """Retorna o objeto autenticado da API do Drive."""
+        return self._service
+
     # ── Estrutura de Pastas ───────────────────────────────────────────────────
 
     def obter_ou_criar_pasta(self, nome: str, pai_id: str | None = None) -> str:
@@ -90,7 +100,7 @@ class DriveService:
             f"mimeType = '{MIME_FOLDER}'",
             "trashed = false",
         ]
-        if pai_id:
+        if pai_id and pai_id != "root":
             query_parts.append(f"'{pai_id}' in parents")
         else:
             query_parts.append("'root' in parents")
@@ -114,7 +124,7 @@ class DriveService:
                     "name": nome,
                     "mimeType": MIME_FOLDER,
                 }
-                if pai_id:
+                if pai_id and pai_id != "root":
                     meta["parents"] = [pai_id]
                 pasta = self._service.files().create(body=meta, fields="id").execute()
                 folder_id = pasta["id"]
@@ -127,15 +137,35 @@ class DriveService:
             logger.error("Erro ao criar/buscar pasta '%s': %s", nome, exc)
             raise
 
-    def garantir_estrutura(self, data: datetime) -> str:
+    def garantir_estrutura(self, data: datetime, raiz_id: str | None = None) -> str:
         """
-        Garante a estrutura /Documentos/AAAA/MM/ e retorna o ID da pasta MÊS.
+        Garante a estrutura <RAIZ>/AAAA/MM/ e retorna o ID da pasta MÊS.
+
+        Args:
+            data:     Data do email, usada para definir ANO e MÊS.
+            raiz_id:  ID da pasta raiz configurada pelo usuário via
+                      folder_selector. Se None ou "root", usa
+                      DRIVE_ROOT_FOLDER_NAME do config.py como fallback.
+
+        Returns:
+            ID da pasta de mês (onde o PDF será depositado).
         """
         ano = str(data.year)
         mes = f"{data.month:02d}"
 
-        raiz_id = self.obter_ou_criar_pasta(DRIVE_ROOT_FOLDER_NAME)
-        ano_id = self.obter_ou_criar_pasta(ano, pai_id=raiz_id)
+        # Determina a pasta raiz: preferência ao ID configurado pelo usuário
+        if raiz_id and raiz_id != "root":
+            logger.debug("Usando pasta raiz configurada (id=%s)", raiz_id)
+            pasta_raiz_id = raiz_id
+        else:
+            # Fallback: cria/usa a pasta pelo nome definido no config.py
+            logger.debug(
+                "Usando pasta raiz padrão '%s' (drive_config.json não encontrado).",
+                DRIVE_ROOT_FOLDER_NAME,
+            )
+            pasta_raiz_id = self.obter_ou_criar_pasta(DRIVE_ROOT_FOLDER_NAME)
+
+        ano_id = self.obter_ou_criar_pasta(ano, pai_id=pasta_raiz_id)
         mes_id = self.obter_ou_criar_pasta(mes, pai_id=ano_id)
         return mes_id
 
@@ -154,7 +184,7 @@ class DriveService:
 
         delay = _RETRY_DELAY
         for tentativa in range(1, _MAX_RETRIES + 1):
-            # CORREÇÃO: recria o MediaFileUpload a cada tentativa para evitar
+            # Recria o MediaFileUpload a cada tentativa para evitar
             # estado corrompido em uploads retomáveis após falha.
             media = MediaFileUpload(str(caminho_pdf), mimetype=MIME_PDF, resumable=True)
             try:
@@ -185,5 +215,4 @@ class DriveService:
                     logger.error("Erro no upload de %s: %s", caminho_pdf.name, exc)
                     raise
 
-        # Nunca deveria chegar aqui, mas satisfaz o type checker
         raise RuntimeError(f"Upload falhou após {_MAX_RETRIES} tentativas.")

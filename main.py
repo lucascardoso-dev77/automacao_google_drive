@@ -2,19 +2,25 @@
 main.py - Orquestrador principal do pipeline de automação documental.
 
 Fluxo por email:
-  1. Listar emails na label PROCESSAR
-  2. Verificar duplicidade (SQLite)
-  3. Extrair metadados, corpo e anexos (GmailService)
-  4. Converter corpo HTML → PDF  (PdfConverter)
-  5. Converter cada anexo → PDF  (PdfConverter)
-  6. Mesclar todos os PDFs       (PdfMerger)
-  7. Classificar documento       (Classifier)
-  8. Gerar nome final            (AAAA-MM-DD_ASSUNTO.pdf)
-  9. Criar pasta no Drive e fazer upload (DriveService)
- 10. Registrar no SQLite + mover email para label PROCESSADO
- 11. Limpar arquivos temporários (SOMENTE após upload confirmado)
+  1. [NOVO] Verificar/selecionar pasta raiz no Drive (folder_selector)
+  2. Listar emails na label PROCESSAR
+  3. Verificar duplicidade (SQLite)
+  4. Extrair metadados, corpo e anexos (GmailService)
+  5. Converter corpo HTML → PDF  (PdfConverter)
+  6. Converter cada anexo → PDF  (PdfConverter)
+  7. Mesclar todos os PDFs       (PdfMerger)
+  8. Classificar documento       (Classifier)
+  9. Gerar nome final            (AAAA-MM-DD_ASSUNTO.pdf)
+ 10. Criar pasta AAAA/MM no Drive e fazer upload (DriveService)
+ 11. Registrar no SQLite + mover email para label PROCESSADO
+ 12. Limpar arquivos temporários (SOMENTE após upload confirmado)
+
+Argumentos de linha de comando:
+  --reconfigura   Abre o seletor de pasta mesmo que já haja configuração salva.
+                  Útil para trocar a pasta de destino sem apagar drive_config.json.
 """
 
+import argparse
 import logging
 import shutil
 import sys
@@ -26,12 +32,14 @@ from config import LOG_FILE, LOG_LEVEL, OUTPUT_DIR
 from classifier import Classifier
 from database import Database
 from drive_service import DriveService
+from folder_selector import configurar_pasta_raiz
 from gmail_service import GmailService, EmailData
 from pdf_converter import PdfConverter
 from pdf_merger import PdfMerger
 from supplier_extractor import gerar_nome_final
 
 # ── Logging ───────────────────────────────────────────────────────────────────
+
 
 def configurar_logging() -> None:
     fmt = "%(asctime)s [%(levelname)-8s] %(name)s — %(message)s"
@@ -42,12 +50,37 @@ def configurar_logging() -> None:
     logging.basicConfig(level=LOG_LEVEL, format=fmt, handlers=handlers)
 
 
+# ── Argumentos ────────────────────────────────────────────────────────────────
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Automação Documental — Gmail + Google Drive"
+    )
+    parser.add_argument(
+        "--reconfigura",
+        action="store_true",
+        help=(
+            "Abre o seletor de pasta do Drive mesmo que já exista "
+            "uma configuração salva em drive_config.json."
+        ),
+    )
+    return parser.parse_args()
+
+
 # ── Pipeline ──────────────────────────────────────────────────────────────────
+
 
 class Pipeline:
     """Orquestra o processamento de emails."""
 
-    def __init__(self) -> None:
+    def __init__(self, pasta_raiz_id: str) -> None:
+        """
+        Args:
+            pasta_raiz_id: ID da pasta raiz no Drive escolhida pelo usuário.
+                           Passado a garantir_estrutura em cada upload.
+        """
+        self.pasta_raiz_id = pasta_raiz_id
         self.gmail = GmailService()
         self.drive = DriveService()
         self.converter = PdfConverter()   # Injete ocr_hook= para ativar OCR
@@ -100,7 +133,9 @@ class Pipeline:
                 classificacao=classificacao,
             )
             self.gmail.mover_para_processado(message_id)
-            logger.info("✓ Email %s processado com sucesso → %s", message_id, nome_pdf)
+            logger.info(
+                "✓ Email %s processado com sucesso → %s", message_id, nome_pdf
+            )
 
         except Exception as exc:
             logger.exception("✗ Erro ao processar email %s: %s", message_id, exc)
@@ -117,28 +152,23 @@ class Pipeline:
             # 4. Corpo HTML → PDF
             html_content = email.corpo_html or f"<pre>{email.corpo_texto}</pre>"
             email_pdf = pasta_trabalho / "00_email.pdf"
-
-            #ALTERACAO PARA PUXAR O ASSUNTO 
             self.converter.html_string_para_pdf(
-
                 html=html_content,
                 destino=email_pdf,
                 assunto=email.assunto,
                 remetente=email.remetente,
                 data_email=email.data,
                 nomes_anexos=[a.name for a in email.anexos],
-                message_id=email.message_id,   
-            )  
-
+                message_id=email.message_id,
+            )
 
             # 5. Anexos → PDF
             anexos_pdf = self._converter_anexos(email.anexos, pasta_trabalho)
 
-            # 5b. Classifica cada PDF de anexo individualmente para que o
-            #     merger possa ordenar os documentos por categoria.
+            # 5b. Classifica cada PDF de anexo individualmente
             classificacoes_anexos = self._classificar_anexos(anexos_pdf)
 
-            # 6. Mesclagem — nome provisório para o arquivo de trabalho
+            # 6. Mesclagem
             destino_final = pasta_trabalho / "_merged_temp.pdf"
             self.merger.mesclar(
                 email_pdf,
@@ -147,8 +177,7 @@ class Pipeline:
                 classificacoes_anexos=classificacoes_anexos,
             )
 
-            # 6b. Geração do nome final com identificação do fornecedor
-            #     Hierarquia: XML NF-e → PDF DANFE → PDF Boleto → fallback
+            # 6b. Geração do nome final
             nome_final = gerar_nome_final(
                 data_email=data_email,
                 anexos_originais=email.anexos,
@@ -159,31 +188,27 @@ class Pipeline:
             destino_final = destino_renomeado
             logger.info("Arquivo renomeado para: %s", nome_final)
 
-            # 7. Classificação
+            # 7. Classificação do email
             texto_para_classificar = email.assunto + " " + email.corpo_texto
             classificacao = self.classifier.classificar(texto_para_classificar)
             logger.info("Classificação: %s", classificacao)
 
-            # 9. Upload Drive
-            pasta_drive_id = self.drive.garantir_estrutura(data_email)
+            # 9. Upload Drive — usa a pasta raiz configurada pelo usuário
+            pasta_drive_id = self.drive.garantir_estrutura(
+                data_email, raiz_id=self.pasta_raiz_id
+            )
             drive_link = self.drive.fazer_upload(destino_final, pasta_drive_id)
 
         finally:
-            # CORREÇÃO: a limpeza agora ocorre SEMPRE ao final do bloco try,
-            # garantindo que arquivos temporários sejam removidos mesmo em caso
-            # de erro. O registro de erro é feito pelo chamador (_processar_email).
-            # Se o upload falhou, a exceção já foi propagada antes desta linha.
+            # Limpeza sempre ao final, mesmo em caso de erro
             shutil.rmtree(pasta_trabalho, ignore_errors=True)
             logger.debug("Pasta de trabalho removida: %s", pasta_trabalho)
 
         return nome_final, drive_link, classificacao
 
     def _classificar_anexos(self, pdfs: list[Path]) -> list[str]:
-        """
-        Classifica cada PDF de anexo extraindo seu texto e aplicando o
-        Classifier — retorna uma lista na mesma ordem de `pdfs`.
-        """
-        from supplier_extractor import _extrair_texto_pdf  # importação local para evitar ciclo
+        """Classifica cada PDF de anexo e retorna lista na mesma ordem."""
+        from supplier_extractor import _extrair_texto_pdf
 
         classificacoes: list[str] = []
         for pdf in pdfs:
@@ -191,9 +216,13 @@ class Pipeline:
                 texto = _extrair_texto_pdf(pdf)
                 classificacao = self.classifier.classificar(texto) if texto else "Outros"
             except Exception as exc:
-                logger.warning("Erro ao classificar '%s': %s — usando 'Outros'.", pdf.name, exc)
+                logger.warning(
+                    "Erro ao classificar '%s': %s — usando 'Outros'.", pdf.name, exc
+                )
                 classificacao = "Outros"
-            logger.debug("Anexo '%s' classificado como '%s'.", pdf.name, classificacao)
+            logger.debug(
+                "Anexo '%s' classificado como '%s'.", pdf.name, classificacao
+            )
             classificacoes.append(classificacao)
         return classificacoes
 
@@ -209,7 +238,9 @@ class Pipeline:
                     destino_dir=pasta_saida / f"anexo_{i:02d}",
                 )
                 pdfs.append(pdf)
-                logger.info("Anexo %d/%d convertido: %s", i, len(anexos), pdf.name)
+                logger.info(
+                    "Anexo %d/%d convertido: %s", i, len(anexos), pdf.name
+                )
             except Exception as exc:
                 logger.error(
                     "Erro ao converter anexo '%s': %s — ignorando.", anexo.name, exc
@@ -227,18 +258,38 @@ class Pipeline:
 
 
 # ── Execução ──────────────────────────────────────────────────────────────────
-# NOTA: o dashboard NÃO sobe mais aqui. Como este script é reiniciado a cada
-# ciclo pelo iniciar_automacao.bat (loop com `py main.py`), uma thread daemon
-# criada aqui morre junto com o processo a cada execução — o dashboard ficaria
-# "no ar" só durante os poucos segundos do pipeline. Agora ele roda como
-# processo independente e persistente, iniciado por iniciar_dashboard.bat.
 
 configurar_logging()
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
+    args = _parse_args()
+
     logger.info("╔══════════════════════════════════════════╗")
     logger.info("║   Automação Documental — Gmail + Drive   ║")
     logger.info("╚══════════════════════════════════════════╝")
 
-    Pipeline().executar()
+    # ── 1. Autenticar Drive (necessário antes do seletor de pastas) ───────────
+    drive_temp = DriveService()
+
+    # ── 2. Configurar (ou confirmar) a pasta raiz no Drive ────────────────────
+    #   • Primeira execução ou --reconfigura → abre seletor interativo
+    #   • Execuções seguintes → lê drive_config.json e exibe confirmação
+    try:
+        pasta_config = configurar_pasta_raiz(
+            service=drive_temp.service,
+            forcar=args.reconfigura,
+        )
+    except KeyboardInterrupt as exc:
+        logger.warning("Configuração de pasta cancelada: %s", exc)
+        sys.exit(0)
+
+    pasta_raiz_id: str = pasta_config["folder_id"]
+    logger.info(
+        "Pasta de destino: %s (id=%s)",
+        pasta_config["caminho"],
+        pasta_raiz_id,
+    )
+
+    # ── 3. Executar pipeline de processamento de emails ───────────────────────
+    Pipeline(pasta_raiz_id=pasta_raiz_id).executar()
